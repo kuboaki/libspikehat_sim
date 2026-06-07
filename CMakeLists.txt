@@ -30,14 +30,19 @@ find_path(MUJOCO_INCLUDE_DIR mujoco/mujoco.h
         /usr/local/include
 )
 
-find_library(MUJOCO_LIBRARY
-    NAMES mujoco mujoco.3.8.1
-    PATHS
-        ${MUJOCO_ROOT}
-        ${MUJOCO_ROOT}/lib
-        ${MUJOCO_ROOT}/Libraries
-        /usr/local/lib
+file(GLOB _MUJOCO_DYLIBS
+    "${MUJOCO_ROOT}/libmujoco*.dylib"
+    "${MUJOCO_ROOT}/lib/libmujoco*.dylib"
+    "/usr/local/lib/libmujoco*.dylib"
 )
+list(GET _MUJOCO_DYLIBS 0 MUJOCO_LIBRARY)
+if(NOT MUJOCO_LIBRARY)
+    find_library(MUJOCO_LIBRARY
+        NAMES mujoco
+        PATHS ${MUJOCO_ROOT}/lib /usr/local/lib
+        NO_DEFAULT_PATH
+    )
+endif()
 
 if(NOT MUJOCO_INCLUDE_DIR OR NOT MUJOCO_LIBRARY)
     message(FATAL_ERROR
@@ -97,3 +102,22 @@ install(TARGETS spikehat_sim
 install(FILES include/spikehat.h
     DESTINATION include
 )
+
+# ── macOS: mujoco.framework シンボリックリンクのセットアップ ─────────
+if(APPLE)
+    execute_process(
+        COMMAND python3 -c
+            "import mujoco, os; print(os.path.dirname(mujoco.__file__))"
+        OUTPUT_VARIABLE MUJOCO_PY_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(_FWDIR "${MUJOCO_PY_DIR}/mujoco.framework/Versions/A")
+    set(_DYLIB "${MUJOCO_PY_DIR}/libmujoco.3.8.1.dylib")
+    file(MAKE_DIRECTORY ${_FWDIR})
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            ${_DYLIB}
+            "${_FWDIR}/libmujoco.3.8.1.dylib"
+    )
+    message(STATUS "mujoco.framework symlink: ${_FWDIR}")
+endif()

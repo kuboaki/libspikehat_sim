@@ -17,7 +17,8 @@ import atexit
 import signal
 
 _here  = os.path.dirname(os.path.abspath(__file__))
-_so    = os.path.join(_here, '..', 'build', 'libspikehat_sim.so')
+_ext   = 'dylib' if __import__('sys').platform == 'darwin' else 'so'
+_so    = os.path.join(_here, '..', 'build', f'libspikehat_sim.{_ext}')
 _lib   = ctypes.CDLL(os.path.realpath(_so))
 _hat_p = ctypes.c_void_p
 _int_p = ctypes.POINTER(ctypes.c_int)
