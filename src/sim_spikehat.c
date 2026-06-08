@@ -245,6 +245,43 @@ int spikehat_motor_run_for_seconds(spikehat_t *hat, int port,
     return 0;
 }
 
+int spikehat_motor_run_for_degrees(spikehat_t *hat, int port,
+                                   int degrees, int speed) {
+    if (!hat || speed == 0) return -1;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->qpos_adr < 0) return -1;
+
+    /* 目標角度を計算
+     * 正の速度 → position_deg が減少するため、degrees の符号を反転 */
+    double cur    = sim->position_deg;
+    double target = cur - (double)degrees;
+
+    /* 速度の符号で方向を決める */
+    int actual_speed = (degrees >= 0) ? abs(speed) : -abs(speed);
+    sim->ctrl = actual_speed * SPEED_TO_CTRL;
+
+    /* 慣性補正: 目標の手前で止める（速度に比例した補正量） */
+    double early = 0.0;
+    double stop_at = target;
+
+    /* stop_at に達するまでステップ実行（speed_scale を考慮） */
+    int max_steps = (int)(10.0 * sim->speed_scale / sim->model->opt.timestep);
+    for (int i = 0; i < max_steps; i++) {
+        sim_step(sim);
+        double pos = sim->position_deg;
+        if (degrees >= 0 && pos <= stop_at) break;
+        if (degrees <  0 && pos >= stop_at) break;
+    }
+
+    /* ブレーキ: ctrl=0 にして慣性が収まるまで少し待つ */
+    sim->ctrl = 0.0;
+    int settle = (int)(0.5 / sim->model->opt.timestep);
+    for (int i = 0; i < settle; i++) {
+        sim_step(sim);
+    }
+    return 0;
+}
+
 int spikehat_motor_get_speed(spikehat_t *hat, int port, int *speed) {
     if (!hat || !speed) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
@@ -315,6 +352,39 @@ int spikehat_color_read_hsv(spikehat_t *hat, int port,
     float *rgba = &sim->model->geom_rgba[gid * 4];
     rgb_to_hsv((double)rgba[0], (double)rgba[1], (double)rgba[2],
                hue, sat, val);
+    return 0;
+}
+
+int spikehat_color_read_rgb(spikehat_t *hat, int port,
+                             int *r, int *g, int *b) {
+    if (!hat || !r || !g || !b) return -1;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->color_site_id < 0) { *r = *g = *b = 0; return 0; }
+
+    /* color_site の現在位置 */
+    double *sp = &sim->data->site_xpos[sim->color_site_id * 3];
+
+    /* 真下方向 */
+    double down[3] = { 0.0, 0.0, -1.0 };
+
+    /* レイキャスト */
+    int site_bodyid = sim->model->site_bodyid[sim->color_site_id];
+    int geomid_out[1] = { -1 };
+    mjtNum normal[3];
+    mjtNum dist = mj_ray(sim->model, sim->data,
+                         sp, down, NULL, 1, site_bodyid,
+                         geomid_out, normal);
+
+    if (dist < 0 || geomid_out[0] < 0) {
+        *r = *g = *b = 0;
+        return 0;
+    }
+
+    /* geomのRGBAから RGB (0〜255) に変換 */
+    float *rgba = &sim->model->geom_rgba[geomid_out[0] * 4];
+    *r = (int)round(rgba[0] * 255.0f);
+    *g = (int)round(rgba[1] * 255.0f);
+    *b = (int)round(rgba[2] * 255.0f);
     return 0;
 }
 
