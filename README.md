@@ -26,6 +26,38 @@ cmake --build build
 
 macOS では cmake 時に `mujoco.framework` のシンボリックリンクが自動的に作成される。
 
+## libspikehat との関係
+
+libspikehat_sim は libspikehat と同じ API（`spikehat.h`）を持ち、
+リンクするライブラリを切り替えるだけで実機とシムを使い分けられます。
+┌───────────────┐       ┌─────────────────────┐
+│   C app        │       │   Python app         │
+└──────┬────────┘       └──────────┬───────────┘
+│                           │ ctypes
+└────────────┬──────────────┘
+┌─────▼──────────────────────┐
+│   libspikehat_sim.dylib/so  │
+│  (MuJoCo simulation impl)   │
+└─────┬──────────────────────┘
+│ MuJoCo C API
+┌─────▼──────────────────────┐
+│     MuJoCo Physics Engine   │
+└────────────────────────────┘
+
+### C アプリのリンク方法
+
+```bash
+# 実機用（Raspberry Pi）
+cc myapp.c -I path/to/libspikehat/include \
+           -L path/to/libspikehat/build -lspikehat
+
+# シム用（Mac / Linux）
+cc myapp.c -I path/to/libspikehat_sim/include \
+           -L path/to/libspikehat_sim/build -lspikehat_sim
+```
+
+ヘッダー（`spikehat.h`）は共通なので、アプリコードの変更は不要です。
+
 ## 使い方
 
 ### C版
