@@ -95,6 +95,21 @@ target_link_libraries(test_motor
         spikehat_sim
 )
 
+# ── test_color_sensor（C版） ─────────────────────────────────────────
+add_executable(test_color_sensor
+    examples/test_color_sensor.c
+)
+
+target_include_directories(test_color_sensor
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_color_sensor
+    PRIVATE
+        spikehat_sim
+)
+
 # ── インストール ─────────────────────────────────────────────────────
 install(TARGETS spikehat_sim
     LIBRARY DESTINATION lib

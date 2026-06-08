@@ -77,23 +77,27 @@ typedef struct sim_spikehat {
     int      joint_id;       /* motor_joint の ID */
     int      qpos_adr;       /* motor_joint の qpos アドレス */
     int      ctrl_id;        /* actuator の ctrl インデックス */
+    int      color_site_id;  /* カラーセンサーsite（-1=未検出） */
 } sim_spikehat_t;
 
 
 /* ── ヘルパー関数 ────────────────────────────────────────────────── */
 
-/** 1ステップ進めて累積角度を更新する */
-static void sim_step(sim_spikehat_t *sim) {
-    sim->data->ctrl[sim->ctrl_id] = sim->ctrl;
-    mj_step(sim->model, sim->data);
-
-    /* qpos の差分から累積角度を更新（ラップアラウンド補正あり） */
+static void _update_position(sim_spikehat_t *sim) {
+    if (sim->qpos_adr < 0) return;  /* モーターなし */
     double curr = sim->data->qpos[sim->qpos_adr];
     double delta = curr - sim->prev_qpos;
     if (delta >  M_PI) delta -= 2.0 * M_PI;
     if (delta < -M_PI) delta += 2.0 * M_PI;
     sim->position_deg -= delta * (180.0 / M_PI);
     sim->prev_qpos = curr;
+}
+
+/** 1ステップ進めて累積角度を更新する */
+static void sim_step(sim_spikehat_t *sim) {
+    sim->data->ctrl[sim->ctrl_id] = sim->ctrl;
+    mj_step(sim->model, sim->data);
+    _update_position(sim);
 }
 
 /** seconds 秒分のシミュレーションステップを実行する */
@@ -144,24 +148,24 @@ spikehat_t *spikehat_open(const char *device) {
     /* 速度スケールの設定 */
     sim->speed_scale = DEFAULT_SPEED_SCALE;
 
-    /* MuJoCo インデックスのキャッシュ */
-    sim->joint_id = mj_name2id(sim->model, mjOBJ_JOINT, MOTOR_JOINT_NAME);
+    /* motor_joint のインデックスを検索（なければ -1 でモーター機能無効） */
+    sim->joint_id = mj_name2id(sim->model, mjOBJ_JOINT, "motor_joint");
     if (sim->joint_id < 0) {
-        fprintf(stderr, "sim_spikehat: joint '%s' not found\n", MOTOR_JOINT_NAME);
-        mj_deleteData(sim->data);
-        mj_deleteModel(sim->model);
-        free(sim);
-        return NULL;
+        fprintf(stderr, "[sim] motor_joint not found: motor functions disabled\n");
+        sim->qpos_adr = -1;
+    } else {
+        sim->qpos_adr = sim->model->jnt_qposadr[sim->joint_id];
     }
-    sim->qpos_adr = sim->model->jnt_qposadr[sim->joint_id];
-    sim->ctrl_id  = 0;  /* actuatorは1つだけ想定 */
+    sim->ctrl_id = 0;
 
     /* 初期状態を計算 */
     mj_forward(sim->model, sim->data);
-    sim->prev_qpos    = sim->data->qpos[sim->qpos_adr];
+    sim->prev_qpos    = (sim->qpos_adr >= 0) ? sim->data->qpos[sim->qpos_adr] : 0.0;
     sim->position_deg = 0.0;
     sim->ctrl         = 0.0;
     sim->running      = 1;
+    sim->color_site_id = mj_name2id(sim->model, mjOBJ_SITE, "color_site");
+    fprintf(stderr, "[sim] color_site id=%d\n", sim->color_site_id);
 
     fprintf(stderr, "[sim] spikehat_open: %s (timestep=%.4f, speed_scale=%.1f)\n",
             xml_path, sim->model->opt.timestep, sim->speed_scale);
@@ -251,6 +255,7 @@ int spikehat_motor_get_speed(spikehat_t *hat, int port, int *speed) {
 int spikehat_motor_get_position(spikehat_t *hat, int port, int *degrees) {
     if (!hat || !degrees) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->qpos_adr < 0) return -1;  /* モーターなし */
     *degrees = (int)round(sim->position_deg);
     return 0;
 }
@@ -265,11 +270,51 @@ int spikehat_distance_read(spikehat_t *hat, int port, int *mm) {
     return 0;
 }
 
+static void rgb_to_hsv(double r, double g, double b,
+                       int *hue, int *sat, int *val) {
+    double max = r > g ? (r > b ? r : b) : (g > b ? g : b);
+    double min = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    double delta = max - min;
+    *val = (int)round(max * 1000.0);
+    *sat = (max > 0.0) ? (int)round((delta / max) * 1000.0) : 0;
+    if (delta < 1e-6) { *hue = 0; return; }
+    double h;
+    if (max == r)      h = 60.0 * fmod((g - b) / delta, 6.0);
+    else if (max == g) h = 60.0 * ((b - r) / delta + 2.0);
+    else               h = 60.0 * ((r - g) / delta + 4.0);
+    if (h < 0.0) h += 360.0;
+    *hue = (int)round(h);
+}
+
 int spikehat_color_read_hsv(spikehat_t *hat, int port,
                              int *hue, int *sat, int *val) {
     if (!hat || !hue || !sat || !val) return -1;
-    /* TODO: color_site の位置からマーカー判定で実装 */
-    *hue = 0; *sat = 0; *val = 0;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->color_site_id < 0) { *hue = *sat = *val = 0; return 0; }
+
+    /* color_site の現在位置 */
+    double *sp = &sim->data->site_xpos[sim->color_site_id * 3];
+
+    /* 真下方向 */
+    double down[3] = { 0.0, 0.0, -1.0 };
+
+    /* color_site が属する body を除外してレイキャスト */
+    int site_bodyid = sim->model->site_bodyid[sim->color_site_id];
+    int geomid_out[1] = { -1 };
+    mjtNum normal[3];
+    mjtNum dist = mj_ray(sim->model, sim->data,
+                         sp, down, NULL, 1, site_bodyid, geomid_out, normal);
+
+    if (dist < 0 || geomid_out[0] < 0) {
+        *hue = *sat = *val = 0;
+        return 0;
+    }
+
+    /* ヒットしたgeomのRGBAからHSVを計算 */
+    int gid = geomid_out[0];
+    float *rgba = &sim->model->geom_rgba[gid * 4];
+    rgb_to_hsv((double)rgba[0], (double)rgba[1], (double)rgba[2],
+               hue, sat, val);
     return 0;
 }
 
