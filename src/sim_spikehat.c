@@ -79,6 +79,8 @@ typedef struct sim_spikehat {
     int      ctrl_id;        /* actuator の ctrl インデックス */
     int      color_site_id;    /* カラーセンサーsite（-1=未検出） */
     int      distance_site_id; /* 距離センサーsite（-1=未検出） */
+    int      force_site_id;    /* フォースセンサーsite（-1=未検出） */
+    int      force_sensor_id;  /* touchセンサーのID（-1=未検出） */
 } sim_spikehat_t;
 
 
@@ -172,6 +174,12 @@ spikehat_t *spikehat_open(const char *device) {
     if (sim->distance_site_id < 0)
         sim->distance_site_id = mj_name2id(sim->model, mjOBJ_SITE, "sonar_site");
     fprintf(stderr, "[sim] distance_site id=%d\n", sim->distance_site_id);
+    /* force_site を検索 */
+    sim->force_site_id = mj_name2id(sim->model, mjOBJ_SITE, "force_site");
+    /* touch センサーを検索 */
+    sim->force_sensor_id = mj_name2id(sim->model, mjOBJ_SENSOR, "force_touch");
+    fprintf(stderr, "[sim] force_site id=%d  force_touch id=%d\n",
+            sim->force_site_id, sim->force_sensor_id);
 
     fprintf(stderr, "[sim] spikehat_open: %s (timestep=%.4f, speed_scale=%.1f)\n",
             xml_path, sim->model->opt.timestep, sim->speed_scale);
@@ -418,6 +426,14 @@ int spikehat_color_read_rgb(spikehat_t *hat, int port,
 int spikehat_force_read(spikehat_t *hat, int port,
                         int *force, int *pressed) {
     if (!hat || !force || !pressed) return -1;
-    *force = 0; *pressed = 0;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->force_sensor_id < 0) { *force = 0; *pressed = 0; return 0; }
+
+    /* touch センサーの値を取得（接触力 [N]） */
+    int adr = sim->model->sensor_adr[sim->force_sensor_id];
+    double f = sim->data->sensordata[adr];
+
+    *force   = (int)round(f);
+    *pressed = (f > 1.0) ? 1 : 0;  /* 1N以上で押下判定 */
     return 0;
 }

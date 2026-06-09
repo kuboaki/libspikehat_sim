@@ -125,6 +125,21 @@ target_link_libraries(test_distance_sensor
         spikehat_sim
 )
 
+# ── test_force_sensor（C版） ──────────────────────────────────────────
+add_executable(test_force_sensor
+    examples/test_force_sensor.c
+)
+
+target_include_directories(test_force_sensor
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_force_sensor
+    PRIVATE
+        spikehat_sim
+)
+
 # ── インストール ─────────────────────────────────────────────────────
 install(TARGETS spikehat_sim
     LIBRARY DESTINATION lib

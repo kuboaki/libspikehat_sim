@@ -1,0 +1,85 @@
+<mujoco model="test_force_sensor">
+
+  <compiler angle="degree" meshdir="meshes/"/>
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+
+  <visual>
+    <headlight diffuse="0.8 0.8 0.8" ambient="0.4 0.4 0.4" specular="0.1 0.1 0.1"/>
+  </visual>
+
+  <!--
+    フォースセンサーテスト用モデル
+
+    構成:
+      - force_sensor_body: フォースセンサー本体（固定）
+        - force_site: センサー検出点（上面）
+      - press_body: 押下ブロック（スライダーで上下に移動）
+
+    操作:
+      - Controlスライダー "press_ctrl" で押下ブロックを下げる
+      - センサーに接触すると force 値が増加、pressed=1 になる
+
+    力の判定:
+      - force: 接触力（0〜10 N）
+      - pressed: force > 1 N で 1（押下判定）
+  -->
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker"
+             width="512" height="512"
+             rgb1="0.7 0.7 0.7" rgb2="0.8 0.8 0.8"/>
+    <material name="grid_mat" texture="grid" texrepeat="4 4"/>
+  </asset>
+
+  <worldbody>
+    <light name="light_top" pos="0 0 1.0" dir="0 0 -1"
+           diffuse="0.8 0.8 0.8" specular="0.1 0.1 0.1" directional="true"/>
+
+    <!-- 床 -->
+    <geom name="floor" type="plane" size="0.5 0.5 0.01"
+          material="grid_mat" contype="1" conaffinity="1"/>
+
+    <!-- フォースセンサー本体（固定） -->
+    <body name="force_sensor_body" pos="0 0 0.020">
+      <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
+
+      <!-- センサー本体 -->
+      <geom name="force_sensor_geom" type="box"
+            pos="0 0 0" size="0.020 0.020 0.010"
+            rgba="0.3 0.3 0.8 1"
+            contype="1" conaffinity="1"/>
+
+      <!-- force_site: センサー上面の検出点 -->
+      <site name="force_site" pos="0 0 0.010"
+            size="0.018 0.018 0.001" type="box"
+            rgba="1 0.5 0 0.5"/>
+    </body>
+
+    <!-- 押下ブロック（スライダーで上下移動） -->
+    <body name="press_body" pos="0 0 0.100">
+      <joint name="press_slide" type="slide" axis="0 0 -1"
+             range="0.0 0.080" damping="5.0"/>
+      <inertial pos="0 0 0" mass="0.2" diaginertia="0.001 0.001 0.001"/>
+
+      <geom name="press_geom" type="box"
+            pos="0 0 0" size="0.015 0.015 0.010"
+            rgba="0.8 0.3 0.3 1"
+            contype="1" conaffinity="1"/>
+    </body>
+
+  </worldbody>
+
+  <!-- 押下アクチュエーター -->
+  <actuator>
+    <position name="press_ctrl" joint="press_slide"
+              kp="50" ctrllimited="true" ctrlrange="0.0 0.080"/>
+  </actuator>
+
+  <!-- センサー -->
+  <sensor>
+    <!-- force_site に触れた物体からの接触力を検出 -->
+    <touch name="force_touch" site="force_site"/>
+    <jointpos name="press_position" joint="press_slide"/>
+  </sensor>
+
+</mujoco>
