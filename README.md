@@ -119,6 +119,19 @@ libspikehat_sim/
 └── build/                  # ビルド成果物（gitignore対象）
 ```
 
+## フォースセンサーについて
+
+SPIKE Prime フォースセンサーの生値の範囲は **0〜100**（0〜1024ではない）。
+Nへの変換式: `force_N = raw_value / 10.0`
+
+| 値 | 範囲 | 備考 |
+|----|------|------|
+| `force` | 0〜10 N | |
+| `pressed` | 0/1 | force=0 でも pressed=1 になる場合あり（タッチ検出） |
+
+シム版では MuJoCo の touch センサーから直接 N 値を取得するため変換不要。
+シムの最大値は XML の物理パラメータに依存する（現在約 2N）。
+
 ## 関連リポジトリ
 
 - [libspikehat](https://github.com/kuboaki/libspikehat) — 実機用ライブラリ
