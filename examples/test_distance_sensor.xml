@@ -1,0 +1,108 @@
+<mujoco model="test_distance_sensor">
+
+  <compiler angle="degree" meshdir="meshes/"/>
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+
+  <visual>
+    <headlight diffuse="0.8 0.8 0.8" ambient="0.4 0.4 0.4" specular="0.1 0.1 0.1"/>
+  </visual>
+
+  <!--
+    距離センサーテスト用モデル
+
+    構成:
+      - distance_sensor_body: 距離センサー本体（固定）
+        - distance_site: センサーの検出点（前方を向く）
+      - wall_body: 壁（スライダーで前後に移動）
+
+    操作:
+      - Controlスライダー "wall_slide_ctrl" で壁を前後に移動
+      - センサーから壁までの距離が変わる
+      - 有効範囲: 50mm〜300mm
+
+    座標系:
+      - X軸: 左右
+      - Y軸: 前後（プラスが前方）
+      - Z軸: 上下（プラスが上）
+
+    センサー位置: Y=0（原点）
+    壁の初期位置: Y=0.150（センサーから150mm前方）
+    壁の移動範囲: Y=0.030〜0.350（30mm〜350mm）
+
+    距離の計測について:
+      レイキャストは distance_site（センサーデバイス面）から
+      障害物の表面までの距離を返す。
+      wall_y（壁bodyの中心Y座標）とセンサー計測値の差は：
+        センサーsiteのオフセット(15mm) + 壁の半厚(5mm) = 20mm
+      つまり wall_y=150mm のとき 距離=130mm となる。
+      実機のソナーセンサーも同様に「センサー面から障害物表面まで」
+      の距離を返すため、シムの動作は実機と整合している。
+  -->
+
+  <asset>
+    <texture name="grid" type="2d" builtin="checker"
+             width="512" height="512"
+             rgb1="0.7 0.7 0.7" rgb2="0.8 0.8 0.8"/>
+    <material name="grid_mat" texture="grid" texrepeat="4 4"/>
+    <material name="wall_mat" rgba="0.8 0.8 0.2 1"/>
+    <material name="sensor_mat" rgba="0.3 0.3 0.3 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="light_top" pos="0 0 1.0" dir="0 0 -1"
+           diffuse="0.8 0.8 0.8" specular="0.1 0.1 0.1" directional="true"/>
+
+    <!-- 床 -->
+    <geom name="floor" type="plane" size="0.5 0.5 0.01"
+          material="grid_mat" contype="1" conaffinity="1"/>
+
+    <!-- ────────────────────────────────────────────────
+         距離センサー本体（固定）
+         センサーの検出点は前方（Y+方向）を向く
+    ──────────────────────────────────────────────── -->
+    <body name="distance_sensor_body" pos="0 0 0.050">
+      <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+
+      <!-- センサー本体（視覚化用） -->
+      <geom name="sensor_body_geom" type="box"
+            pos="0 0 0" size="0.020 0.015 0.015"
+            material="sensor_mat"
+            contype="0" conaffinity="0"/>
+
+      <!-- 検出点（前方Y+を向く）
+           site の向きは body の向きに依存するため
+           ここでは Y軸正方向が前方になるよう設定 -->
+      <site name="distance_site" pos="0 0.015 0"
+            size="0.005" rgba="1 0 0 1"/>
+    </body>
+
+    <!-- ────────────────────────────────────────────────
+         壁（スライダーで前後に移動）
+         初期位置: センサーから150mm前方
+    ──────────────────────────────────────────────── -->
+    <body name="wall_body" pos="0 0.150 0">
+      <joint name="wall_slide" type="slide" axis="0 1 0"
+             range="-0.120 0.200" damping="10.0"/>
+      <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
+
+      <geom name="wall_geom" type="box"
+            pos="0 0 0.050" size="0.050 0.005 0.050"
+            material="wall_mat"
+            contype="1" conaffinity="1"/>
+    </body>
+
+  </worldbody>
+
+  <!-- 壁スライダーアクチュエーター -->
+  <actuator>
+    <position name="wall_slide_ctrl" joint="wall_slide"
+              kp="100" ctrllimited="true" ctrlrange="-0.120 0.200"/>
+  </actuator>
+
+  <!-- センサー -->
+  <sensor>
+    <jointpos name="wall_position" joint="wall_slide"/>
+    <framepos name="distance_site_pos" objtype="site" objname="distance_site"/>
+  </sensor>
+
+</mujoco>

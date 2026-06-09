@@ -77,7 +77,8 @@ typedef struct sim_spikehat {
     int      joint_id;       /* motor_joint の ID */
     int      qpos_adr;       /* motor_joint の qpos アドレス */
     int      ctrl_id;        /* actuator の ctrl インデックス */
-    int      color_site_id;  /* カラーセンサーsite（-1=未検出） */
+    int      color_site_id;    /* カラーセンサーsite（-1=未検出） */
+    int      distance_site_id; /* 距離センサーsite（-1=未検出） */
 } sim_spikehat_t;
 
 
@@ -166,6 +167,11 @@ spikehat_t *spikehat_open(const char *device) {
     sim->running      = 1;
     sim->color_site_id = mj_name2id(sim->model, mjOBJ_SITE, "color_site");
     fprintf(stderr, "[sim] color_site id=%d\n", sim->color_site_id);
+    /* distance_site を検索（sonar_site もフォールバックとして試みる） */
+    sim->distance_site_id = mj_name2id(sim->model, mjOBJ_SITE, "distance_site");
+    if (sim->distance_site_id < 0)
+        sim->distance_site_id = mj_name2id(sim->model, mjOBJ_SITE, "sonar_site");
+    fprintf(stderr, "[sim] distance_site id=%d\n", sim->distance_site_id);
 
     fprintf(stderr, "[sim] spikehat_open: %s (timestep=%.4f, speed_scale=%.1f)\n",
             xml_path, sim->model->opt.timestep, sim->speed_scale);
@@ -302,8 +308,29 @@ int spikehat_motor_get_position(spikehat_t *hat, int port, int *degrees) {
 
 int spikehat_distance_read(spikehat_t *hat, int port, int *mm) {
     if (!hat || !mm) return -1;
-    /* TODO: MuJoCo のレイキャストで実装 */
-    *mm = DIST_INVALID;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->distance_site_id < 0) { *mm = DIST_INVALID; return 0; }
+
+    /* distance_site の現在位置 */
+    double *sp = &sim->data->site_xpos[sim->distance_site_id * 3];
+
+    /* site_xmat の Y軸正方向が前方 */
+    double *xmat      = &sim->data->site_xmat[sim->distance_site_id * 9];
+    double forward[3] = { xmat[1], xmat[4], xmat[7] };
+
+    /* distance_site が属する body を除外してレイキャスト */
+    int site_bodyid = sim->model->site_bodyid[sim->distance_site_id];
+    int geomid_out[1] = { -1 };
+    mjtNum normal[3];
+    mjtNum dist = mj_ray(sim->model, sim->data,
+                         sp, forward, NULL, 1, site_bodyid,
+                         geomid_out, normal);
+
+    if (dist < 0 || dist > DIST_MAX_M) {
+        *mm = DIST_INVALID;
+    } else {
+        *mm = (int)round(dist * 1000.0);
+    }
     return 0;
 }
 

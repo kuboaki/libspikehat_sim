@@ -110,6 +110,21 @@ target_link_libraries(test_color_sensor
         spikehat_sim
 )
 
+# ── test_distance_sensor（C版） ──────────────────────────────────────
+add_executable(test_distance_sensor
+    examples/test_distance_sensor.c
+)
+
+target_include_directories(test_distance_sensor
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(test_distance_sensor
+    PRIVATE
+        spikehat_sim
+)
+
 # ── インストール ─────────────────────────────────────────────────────
 install(TARGETS spikehat_sim
     LIBRARY DESTINATION lib
