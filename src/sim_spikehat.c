@@ -445,7 +445,7 @@ int spikehat_force_read(spikehat_t *hat, int port,
     double f = sim->data->sensordata[adr];
 
     *force   = (int)round(f);
-    *pressed = (f > 1.0) ? 1 : 0;  /* 1N以上で押下判定 */
+    *pressed = (f > 0.1) ? 1 : 0;  /* 0.1N以上で押下判定（実機に合わせる） */
     return 0;
 }
 
