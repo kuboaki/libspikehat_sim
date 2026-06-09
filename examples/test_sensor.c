@@ -15,7 +15,7 @@ int main(void) {
     spikehat_port_config(hat, 1, SPIKEHAT_DEVICE_FORCE);
     spikehat_port_config(hat, 2, SPIKEHAT_DEVICE_COLOR);
     spikehat_port_config(hat, 3, SPIKEHAT_DEVICE_DISTANCE);
-    sleep(2);
+    spikehat_sleep(hat, 2.0f);
 
     printf("=== センサーテスト (10回) ===\n");
     for (int i = 0; i < 10; i++) {
@@ -37,7 +37,7 @@ int main(void) {
             printf("力: ----         ");
 
         printf("\n");
-        sleep(1);
+        spikehat_sleep(hat, 1.0f);
     }
 
     spikehat_close(hat);

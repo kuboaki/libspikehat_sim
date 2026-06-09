@@ -14,7 +14,7 @@ with SpikeHat() as hat:
     hat.port_config(1, DEVICE_FORCE)
     hat.port_config(2, DEVICE_COLOR)
     hat.port_config(3, DEVICE_DISTANCE)
-    time.sleep(2)
+    hat.sleep(2)
 
     print("=== センサーテスト (10回) ===")
     for _ in range(10):
@@ -36,4 +36,4 @@ with SpikeHat() as hat:
         except RuntimeError:
             print("力: ----")
 
-        time.sleep(1)
+        hat.sleep(1)

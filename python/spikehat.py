@@ -73,6 +73,15 @@ _lib.spikehat_color_read_rgb.argtypes = [_hat_p, ctypes.c_int,
 _lib.spikehat_force_read.restype  = ctypes.c_int
 _lib.spikehat_force_read.argtypes = [_hat_p, ctypes.c_int, _int_p, _int_p]
 
+_lib.spikehat_force_is_pressed.restype  = ctypes.c_int
+_lib.spikehat_force_is_pressed.argtypes = [_hat_p, ctypes.c_int, _int_p]
+
+_lib.spikehat_force_get_force.restype  = ctypes.c_int
+_lib.spikehat_force_get_force.argtypes = [_hat_p, ctypes.c_int, _int_p]
+
+_lib.spikehat_sleep.restype  = None
+_lib.spikehat_sleep.argtypes = [_hat_p, ctypes.c_float]
+
 # デバイス種別定数 (spikehat.h の enum に対応)
 DEVICE_NONE     = 0
 DEVICE_MOTOR_M  = 1
@@ -204,3 +213,29 @@ class SpikeHat:
                 ctypes.byref(f), ctypes.byref(p)) != 0:
             raise RuntimeError("フォースデータなし")
         return (f.value, bool(p.value))
+
+    def force_is_pressed(self, port: int) -> bool:
+        """センサーが押されているか返す"""
+        p = ctypes.c_int()
+        if _lib.spikehat_force_is_pressed(self._hat, port,
+                                           ctypes.byref(p)) != 0:
+            raise RuntimeError("フォースデータなし")
+        return bool(p.value)
+
+    def force_get_force(self, port: int) -> int:
+        """力を N 単位で返す（0〜10）"""
+        f = ctypes.c_int()
+        if _lib.spikehat_force_get_force(self._hat, port,
+                                          ctypes.byref(f)) != 0:
+            raise RuntimeError("フォースデータなし")
+        return f.value
+
+    def sleep(self, seconds: float) -> None:
+        """
+        指定秒数スリープする。
+        実機版: OS の sleep と同等。
+        シム版: MuJoCo のシミュレーションステップを進める。
+        注意: time.sleep() を直接使うとシム版ではセンサー値が
+              更新されないため、必ずこのメソッドを使うこと。
+        """
+        _lib.spikehat_sleep(self._hat, seconds)

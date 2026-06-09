@@ -16,14 +16,13 @@ MuJoCo ビューアで sensor_slide_ctrl スライダーを動かすと
     python3 examples/test_color_sensor.py
 """
 import sys
-import time
 sys.path.insert(0, 'python')
 
 from spikehat import SpikeHat, DEVICE_COLOR
 
 with SpikeHat() as hat:
     hat.port_config(2, DEVICE_COLOR)
-    time.sleep(1)
+    hat.sleep(1)
 
     print("=== カラーセンサーテスト (20回) ===")
     print("MuJoCoビューアで sensor_slide_ctrl を動かしてセンサーを移動してください")
@@ -37,4 +36,4 @@ with SpikeHat() as hat:
         except RuntimeError:
             print(f"[{i+1:2d}] 色: 読み取り失敗")
 
-        time.sleep(1)
+        hat.sleep(1)

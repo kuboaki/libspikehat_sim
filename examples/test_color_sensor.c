@@ -23,7 +23,7 @@ int main(void) {
     if (!hat) return 1;
 
     spikehat_port_config(hat, 2, SPIKEHAT_DEVICE_COLOR);
-    sleep(1);
+    spikehat_sleep(hat, 1.0f);
 
     printf("=== カラーセンサーテスト (20回) ===\n");
     printf("MuJoCoビューアで sensor_slide_ctrl を動かしてセンサーを移動してください\n");
@@ -39,7 +39,7 @@ int main(void) {
             printf("[%2d] 色: 読み取り失敗\n", i + 1);
         }
 
-        sleep(1);
+        spikehat_sleep(hat, 1.0f);
     }
 
     spikehat_close(hat);

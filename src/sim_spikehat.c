@@ -98,7 +98,10 @@ static void _update_position(sim_spikehat_t *sim) {
 
 /** 1ステップ進めて累積角度を更新する */
 static void sim_step(sim_spikehat_t *sim) {
-    sim->data->ctrl[sim->ctrl_id] = sim->ctrl;
+    /* モーターのctrlのみ上書きする（他のアクチュエーターは保持） */
+    if (sim->ctrl_id >= 0 && sim->ctrl_id < sim->model->nu) {
+        sim->data->ctrl[sim->ctrl_id] = sim->ctrl;
+    }
     mj_step(sim->model, sim->data);
     _update_position(sim);
 }
@@ -159,7 +162,15 @@ spikehat_t *spikehat_open(const char *device) {
     } else {
         sim->qpos_adr = sim->model->jnt_qposadr[sim->joint_id];
     }
-    sim->ctrl_id = 0;
+    /* motor_joint に対応するアクチュエーターIDを検索 */
+    sim->ctrl_id = -1;
+    for (int i = 0; i < sim->model->nu; i++) {
+        if (sim->model->actuator_trnid[i * 2] == sim->joint_id) {
+            sim->ctrl_id = i;
+            break;
+        }
+    }
+    fprintf(stderr, "[sim] motor ctrl_id=%d\n", sim->ctrl_id);
 
     /* 初期状態を計算 */
     mj_forward(sim->model, sim->data);
@@ -436,4 +447,42 @@ int spikehat_force_read(spikehat_t *hat, int port,
     *force   = (int)round(f);
     *pressed = (f > 1.0) ? 1 : 0;  /* 1N以上で押下判定 */
     return 0;
+}
+
+int spikehat_force_is_pressed(spikehat_t *hat, int port, int *pressed) {
+    int force = 0;
+    if (spikehat_force_read(hat, port, &force, pressed) != 0) return -1;
+    return 0;
+}
+
+int spikehat_force_get_force(spikehat_t *hat, int port, int *force) {
+    int pressed = 0;
+    if (spikehat_force_read(hat, port, force, &pressed) != 0) return -1;
+    return 0;
+}
+
+void spikehat_sleep(spikehat_t *hat, float seconds) {
+    if (!hat) return;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    sim_sleep(sim, (double)seconds);
+}
+
+/* ── シム専用拡張API ──────────────────────────────────────────────── */
+
+int spikehat_sim_set_ctrl(spikehat_t *hat, int actuator_id, double val) {
+    if (!hat || actuator_id < 0) return -1;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (actuator_id >= sim->model->nu) return -1;
+    sim->data->ctrl[actuator_id] = val;
+    return 0;
+}
+
+void *spikehat_sim_get_model(spikehat_t *hat) {
+    if (!hat) return NULL;
+    return ((sim_spikehat_t *)hat)->model;
+}
+
+void *spikehat_sim_get_data(spikehat_t *hat) {
+    if (!hat) return NULL;
+    return ((sim_spikehat_t *)hat)->data;
 }

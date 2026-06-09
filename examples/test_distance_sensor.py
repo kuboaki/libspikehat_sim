@@ -16,7 +16,6 @@ MuJoCo ビューアで wall_slide_ctrl スライダーを動かすと
     python3 examples/test_distance_sensor.py
 """
 import sys
-import time
 sys.path.insert(0, 'python')
 
 from spikehat import SpikeHat, DEVICE_DISTANCE
@@ -25,7 +24,7 @@ DIST_INVALID = 2000
 
 with SpikeHat() as hat:
     hat.port_config(3, DEVICE_DISTANCE)
-    time.sleep(1)
+    hat.sleep(1)
 
     print("=== 距離センサーテスト (20回) ===")
     print("MuJoCoビューアで wall_slide_ctrl を動かして壁を移動してください")
@@ -42,4 +41,4 @@ with SpikeHat() as hat:
         except RuntimeError:
             print(f"[{i+1:2d}] 距離: 読み取り失敗")
 
-        time.sleep(1)
+        hat.sleep(1)
