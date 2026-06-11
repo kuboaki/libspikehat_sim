@@ -33,7 +33,7 @@
 #define SPEED_TO_CTRL  (1.0 / 100.0)
 
 /** デフォルトの速度スケール（実時間1秒 = シム何秒分） */
-#define DEFAULT_SPEED_SCALE  10.0
+#define DEFAULT_SPEED_SCALE  1.0
 
 /** モータージョイント名 */
 #define MOTOR_JOINT_NAME  "motor_joint"
@@ -92,7 +92,12 @@ static void _update_position(sim_spikehat_t *sim) {
     double delta = curr - sim->prev_qpos;
     if (delta >  M_PI) delta -= 2.0 * M_PI;
     if (delta < -M_PI) delta += 2.0 * M_PI;
-    sim->position_deg -= delta * (180.0 / M_PI);
+    /* gear の符号を取得して position_deg の増減方向を決める */
+    double gear = (sim->ctrl_id >= 0)
+                  ? sim->model->actuator_gear[sim->ctrl_id * 6]
+                  : 1.0;
+    double direction = (gear >= 0) ? 1.0 : -1.0;
+    sim->position_deg += direction * delta * (180.0 / M_PI);
     sim->prev_qpos = curr;
 }
 
@@ -151,8 +156,12 @@ spikehat_t *spikehat_open(const char *device) {
         return NULL;
     }
 
-    /* 速度スケールの設定 */
-    sim->speed_scale = DEFAULT_SPEED_SCALE;
+    /* 速度スケールの設定
+     * 環境変数 SPIKEHAT_SIM_SPEED_SCALE で上書き可能（デフォルト: 1.0 = 実機と同じ時間感覚）
+     * 例: SPIKEHAT_SIM_SPEED_SCALE=10.0 で10倍速シミュレーション */
+    const char *scale_env = getenv("SPIKEHAT_SIM_SPEED_SCALE");
+    sim->speed_scale = (scale_env && scale_env[0] != '\0')
+                       ? atof(scale_env) : DEFAULT_SPEED_SCALE;
 
     /* motor_joint のインデックスを検索（なければ -1 でモーター機能無効） */
     sim->joint_id = mj_name2id(sim->model, mjOBJ_JOINT, "motor_joint");
@@ -274,28 +283,30 @@ int spikehat_motor_run_for_degrees(spikehat_t *hat, int port,
                                    int degrees, int speed) {
     if (!hat || speed == 0) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
-    if (sim->qpos_adr < 0) return -1;
+    if (sim->qpos_adr < 0 || sim->ctrl_id < 0) return -1;
 
-    /* 目標角度を計算
-     * 正の速度 → position_deg が減少するため、degrees の符号を反転 */
+    /* gear の符号を取得して回転方向を決める
+     * actuator_gear は6要素配列で、最初の要素がスカラーgear値 */
+    double gear = sim->model->actuator_gear[sim->ctrl_id * 6];
+    double direction = (gear >= 0) ? 1.0 : -1.0;
+
+    /* 目標角度を計算（gear符号に追従） */
     double cur    = sim->position_deg;
-    double target = cur - (double)degrees;
+    double target = cur + direction * (double)degrees;
 
     /* 速度の符号で方向を決める */
     int actual_speed = (degrees >= 0) ? abs(speed) : -abs(speed);
     sim->ctrl = actual_speed * SPEED_TO_CTRL;
 
-    /* 慣性補正: 目標の手前で止める（速度に比例した補正量） */
-    double early = 0.0;
     double stop_at = target;
 
-    /* stop_at に達するまでステップ実行（speed_scale を考慮） */
-    int max_steps = (int)(10.0 * sim->speed_scale / sim->model->opt.timestep);
+    /* stop_at に達するまでステップ実行 */
+    int max_steps = (int)(10.0 / sim->model->opt.timestep);
     for (int i = 0; i < max_steps; i++) {
         sim_step(sim);
         double pos = sim->position_deg;
-        if (degrees >= 0 && pos <= stop_at) break;
-        if (degrees <  0 && pos >= stop_at) break;
+        if (degrees >= 0 && direction * (pos - stop_at) >= 0.0) break;
+        if (degrees <  0 && direction * (pos - stop_at) <= 0.0) break;
     }
 
     /* ブレーキ: ctrl=0 にして慣性が収まるまで少し待つ */

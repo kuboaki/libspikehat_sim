@@ -15,29 +15,41 @@ int main(void) {
     spikehat_port_config(hat, 1, SPIKEHAT_DEVICE_FORCE);
     spikehat_port_config(hat, 2, SPIKEHAT_DEVICE_COLOR);
     spikehat_port_config(hat, 3, SPIKEHAT_DEVICE_DISTANCE);
-    spikehat_sleep(hat, 2.0f);
+    sleep(2);
 
     printf("=== センサーテスト (10回) ===\n");
     for (int i = 0; i < 10; i++) {
-        int mm = -1, hue = 0, sat = 0, val = 0, force = 0, pressed = 0;
+        int mm = -1, hue = 0, sat = 0, val = 0;
+        int r = 0, g = 0, b = 0;
+        int force = 0, pressed = 0;
 
+        /* 距離センサー */
         if (spikehat_distance_read(hat, 3, &mm) == 0)
             printf("距離: %4d mm  ", mm);
         else
             printf("距離: ----    ");
 
-        if (spikehat_color_read_hsv(hat, 2, &hue, &sat, &val) == 0)
-            printf("色(HSV): %3d/%3d/%3d  ", hue, sat, val);
-        else
-            printf("色: --------    ");
+        /* カラーセンサー: HSV と RGB を交互に表示 */
+        if (i % 2 == 0) {
+            if (spikehat_color_read_hsv(hat, 2, &hue, &sat, &val) == 0)
+                printf("HSV: %3d/%3d/%3d  ", hue, sat, val);
+            else
+                printf("HSV: --------    ");
+        } else {
+            if (spikehat_color_read_rgb(hat, 2, &r, &g, &b) == 0)
+                printf("RGB: %3d/%3d/%3d  ", r, g, b);
+            else
+                printf("RGB: --------    ");
+        }
 
+        /* フォースセンサー */
         if (spikehat_force_read(hat, 1, &force, &pressed) == 0)
             printf("力: %2d N  %s", force, pressed ? "[押下]" : "      ");
         else
             printf("力: ----         ");
 
         printf("\n");
-        spikehat_sleep(hat, 1.0f);
+        sleep(1);
     }
 
     spikehat_close(hat);

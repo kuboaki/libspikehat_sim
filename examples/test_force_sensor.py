@@ -6,11 +6,11 @@ test_force_sensor.py — フォースセンサーテスト（Python版）
   B(1): フォースセンサー
 
 実機での実行方法:
-  python3 examples/test_force_sensor.py
+  cd examples && python3 test_force_sensor.py
 
 シムでの実行方法:
-  SPIKEHAT_SIM_XML=examples/test_force_sensor.xml \\
-    python3 examples/test_force_sensor.py
+  cd examples && SPIKEHAT_SIM_XML=test_force_sensor.xml \\
+    python3 test_force_sensor.py
 
 テスト内容:
   1. force_read       : force[N] と pressed を同時に取得
@@ -18,7 +18,8 @@ test_force_sensor.py — フォースセンサーテスト（Python版）
   3. force_get_force  : 力[N]のみ取得
 """
 import sys
-sys.path.insert(0, 'python')
+import time
+sys.path.insert(0, '../python')
 
 from spikehat import SpikeHat, DEVICE_FORCE
 
@@ -28,7 +29,7 @@ INTERVAL    = 0.5  # 秒
 
 with SpikeHat() as hat:
     hat.port_config(PORT_FORCE, DEVICE_FORCE)
-    hat.sleep(1)
+    time.sleep(1)
 
     # ── テスト1: force_read ──────────────────────────────
     print("=== テスト1: force_read (force と pressed を同時取得) ===")
@@ -40,7 +41,7 @@ with SpikeHat() as hat:
                   f"{'[押下]' if pressed else ''}")
         except RuntimeError:
             print(f"[{i+1}] 読み取り失敗")
-        hat.sleep(INTERVAL)
+        time.sleep(INTERVAL)
 
     # ── テスト2: force_is_pressed ────────────────────────
     print("\n=== テスト2: force_is_pressed (タッチ判定のみ) ===")
@@ -52,7 +53,7 @@ with SpikeHat() as hat:
                   f"{'[押下]' if pressed else ''}")
         except RuntimeError:
             print(f"[{i+1}] 読み取り失敗")
-        hat.sleep(INTERVAL)
+        time.sleep(INTERVAL)
 
     # ── テスト3: force_get_force ─────────────────────────
     print("\n=== テスト3: force_get_force (力[N]のみ) ===")
@@ -63,6 +64,6 @@ with SpikeHat() as hat:
             print(f"[{i+1}] force={force:3d} N")
         except RuntimeError:
             print(f"[{i+1}] 読み取り失敗")
-        hat.sleep(INTERVAL)
+        time.sleep(INTERVAL)
 
     print("\n完了")

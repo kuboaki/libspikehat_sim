@@ -14,7 +14,7 @@ typedef enum {
     SPIKEHAT_DEVICE_NONE     = 0,
     SPIKEHAT_DEVICE_MOTOR_M  = 1,  /* SPIKE Prime Medium Angular Motor */
     SPIKEHAT_DEVICE_MOTOR_L  = 2,  /* SPIKE Prime Large Angular Motor  */
-    SPIKEHAT_DEVICE_COLOR    = 3,  /* SPIKE Prime Color Sensor (HSV)   */
+    SPIKEHAT_DEVICE_COLOR    = 3,  /* SPIKE Prime Color Sensor         */
     SPIKEHAT_DEVICE_DISTANCE = 4,  /* SPIKE Prime Distance Sensor      */
     SPIKEHAT_DEVICE_FORCE    = 5,  /* SPIKE Prime Force Sensor         */
 } spikehat_device_t;
@@ -24,6 +24,7 @@ typedef struct {
     float             values[8];
     int               nvalues;
     int               valid;
+    int               select_mode; /* 現在選択中のモード番号 */
 } spikehat_port_data_t;
 
 typedef struct spikehat {
@@ -45,15 +46,16 @@ void        spikehat_close(spikehat_t *hat);
  *       センサー値が更新されないため、必ずこの関数を使うこと */
 void spikehat_sleep(spikehat_t *hat, float seconds);
 
-/* ポート設定 - open後、利用前に呼ぶ */
+/* ポート設定 */
 int spikehat_port_config(spikehat_t *hat, int port, spikehat_device_t type);
 
 /* モーター制御 */
-int spikehat_motor_pwm(spikehat_t *hat, int port, float power);       /* -1.0〜+1.0 直接PWM */
-int spikehat_motor_start(spikehat_t *hat, int port, int speed);       /* -100〜+100 速度制御 */
+int spikehat_motor_pwm(spikehat_t *hat, int port, float power);
+int spikehat_motor_start(spikehat_t *hat, int port, int speed);
 int spikehat_motor_stop(spikehat_t *hat, int port);
 int spikehat_motor_coast(spikehat_t *hat, int port);
 int spikehat_motor_run_for_seconds(spikehat_t *hat, int port, float seconds, int speed);
+int spikehat_motor_run_for_degrees(spikehat_t *hat, int port, int degrees, int speed);
 int spikehat_motor_get_speed(spikehat_t *hat, int port, int *speed);
 int spikehat_motor_get_position(spikehat_t *hat, int port, int *degrees);
 

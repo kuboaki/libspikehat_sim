@@ -28,7 +28,7 @@ int main(void) {
     if (!hat) { fprintf(stderr, "spikehat_open failed\n"); return 1; }
 
     spikehat_port_config(hat, PORT_FORCE, SPIKEHAT_DEVICE_FORCE);
-    spikehat_sleep(hat, 1.0f);
+    sleep(1);
 
     /* ── テスト1: force_read ────────────────────────────── */
     printf("=== テスト1: force_read (force と pressed を同時取得) ===\n");
@@ -40,7 +40,7 @@ int main(void) {
                    i + 1, force, pressed, pressed ? "[押下]" : "");
         else
             printf("[%d] 読み取り失敗\n", i + 1);
-        spikehat_sleep(hat, INTERVAL_US / 1000000.0f);
+        usleep(INTERVAL_US);
     }
 
     /* ── テスト2: force_is_pressed ──────────────────────── */
@@ -53,7 +53,7 @@ int main(void) {
                    i + 1, pressed, pressed ? "[押下]" : "");
         else
             printf("[%d] 読み取り失敗\n", i + 1);
-        spikehat_sleep(hat, INTERVAL_US / 1000000.0f);
+        usleep(INTERVAL_US);
     }
 
     /* ── テスト3: force_get_force ───────────────────────── */
@@ -65,7 +65,7 @@ int main(void) {
             printf("[%d] force=%3d N\n", i + 1, force);
         else
             printf("[%d] 読み取り失敗\n", i + 1);
-        spikehat_sleep(hat, INTERVAL_US / 1000000.0f);
+        usleep(INTERVAL_US);
     }
 
     printf("\n完了\n");
