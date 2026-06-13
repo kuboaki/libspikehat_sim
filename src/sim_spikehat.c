@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+#include <time.h>
 
 /* ── シミュレーション定数 ──────────────────────────────────────────── */
 
@@ -66,8 +67,9 @@ typedef struct sim_spikehat {
     /* MuJoCo 拡張フィールド */
     mjModel *model;
     mjData  *data;
-    double   speed_scale;    /* 速度スケール */
+    double   speed_scale;    /* 速度スケール（1.0=実時間と同期、>1で高速化） */
     double   ctrl;           /* 現在のctrl値 */
+    double   next_wall;      /* 次のステップを実行すべき時刻[秒]（実時間ペーシング用、0=未初期化） */
 
     /* 累積角度管理（実機エンコーダ相当） */
     double   position_deg;   /* 累積角度 [度] */
@@ -101,6 +103,38 @@ static void _update_position(sim_spikehat_t *sim) {
     sim->prev_qpos = curr;
 }
 
+/**
+ * 1ステップ分の実時間が経過するまで待つ（speed_scaleで調整）。
+ * 1ステップは timestep 秒のシミュレーション時間に相当するので、
+ * speed_scale=1.0 なら実時間でも timestep 秒待つ（実機と同じ速度）。
+ * speed_scale=10.0 なら timestep/10 秒待つ（10倍速）。
+ * 処理が遅れている場合は基準時刻をリセットして暴走（早送り）を防ぐ。
+ */
+static void _pace(sim_spikehat_t *sim) {
+    if (sim->speed_scale <= 0) return;
+
+    double dt = sim->model->opt.timestep / sim->speed_scale;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double now_s = now.tv_sec + now.tv_nsec * 1e-9;
+
+    if (sim->next_wall <= 0) {
+        sim->next_wall = now_s;
+    }
+    sim->next_wall += dt;
+
+    double remain = sim->next_wall - now_s;
+    if (remain > 0) {
+        struct timespec req;
+        req.tv_sec  = (time_t)remain;
+        req.tv_nsec = (long)((remain - (double)req.tv_sec) * 1e9);
+        nanosleep(&req, NULL);
+    } else {
+        sim->next_wall = now_s;
+    }
+}
+
 /** 1ステップ進めて累積角度を更新する */
 static void sim_step(sim_spikehat_t *sim) {
     pthread_mutex_lock(&sim->lock);
@@ -111,11 +145,12 @@ static void sim_step(sim_spikehat_t *sim) {
     mj_step(sim->model, sim->data);
     _update_position(sim);
     pthread_mutex_unlock(&sim->lock);
+    _pace(sim);
 }
 
-/** seconds 秒分のシミュレーションステップを実行する */
+/** seconds 秒分のシミュレーションステップを実行する（実時間でもseconds秒進む） */
 static void sim_sleep(sim_spikehat_t *sim, double seconds) {
-    int steps = (int)(seconds * sim->speed_scale / sim->model->opt.timestep);
+    int steps = (int)(seconds / sim->model->opt.timestep);
     if (steps < 1) steps = 1;
     for (int i = 0; i < steps; i++) {
         sim_step(sim);
