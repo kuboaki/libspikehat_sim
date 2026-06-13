@@ -29,6 +29,18 @@ extern "C" {
 int spikehat_sim_set_ctrl(spikehat_t *hat, int actuator_id, double val);
 
 /**
+ * spikehat_sim_get_qpos — 関節位置 data->qpos[qpos_adr] を取得する
+ *
+ * ビューア表示用に、実シミュレーション側の関節位置を取得する際に使用する。
+ *
+ * @param hat       SpikeHat インスタンス
+ * @param qpos_adr  qposインデックス（model.jnt_qposadr で取得）
+ * @param out       取得した値の格納先
+ * @return 0: 成功, -1: 失敗
+ */
+int spikehat_sim_get_qpos(spikehat_t *hat, int qpos_adr, double *out);
+
+/**
  * spikehat_sim_get_model — MuJoCo モデルのポインタを返す
  * @return mjModel* （実機版では NULL）
  */

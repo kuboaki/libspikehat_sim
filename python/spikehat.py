@@ -90,6 +90,10 @@ _lib.spikehat_sleep.argtypes = [_hat_p, ctypes.c_float]
 _lib.spikehat_sim_set_ctrl.restype  = ctypes.c_int
 _lib.spikehat_sim_set_ctrl.argtypes = [_hat_p, ctypes.c_int, ctypes.c_double]
 
+_lib.spikehat_sim_get_qpos.restype  = ctypes.c_int
+_lib.spikehat_sim_get_qpos.argtypes = [_hat_p, ctypes.c_int,
+                                        ctypes.POINTER(ctypes.c_double)]
+
 # デバイス種別定数 (spikehat.h の enum に対応)
 DEVICE_NONE     = 0
 DEVICE_MOTOR_M  = 1
@@ -250,6 +254,16 @@ class SpikeHat:
         """
         return _lib.spikehat_sim_set_ctrl(self._hat, actuator_id,
                                            ctypes.c_double(value))
+
+    def sim_get_qpos(self, qpos_adr: int) -> float:
+        """
+        シム専用: 関節位置 data->qpos[qpos_adr] を取得する（spikehat_sim.h）。
+        qpos_adr は model.jnt_qposadr[joint_id] で取得する。
+        """
+        v = ctypes.c_double()
+        if _lib.spikehat_sim_get_qpos(self._hat, qpos_adr, ctypes.byref(v)) != 0:
+            raise RuntimeError("qposデータなし")
+        return v.value
 
     def sleep(self, seconds: float) -> None:
         """

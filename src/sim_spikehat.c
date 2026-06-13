@@ -534,6 +534,16 @@ int spikehat_sim_set_ctrl(spikehat_t *hat, int actuator_id, double val) {
     return 0;
 }
 
+int spikehat_sim_get_qpos(spikehat_t *hat, int qpos_adr, double *out) {
+    if (!hat || !out || qpos_adr < 0) return -1;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (qpos_adr >= sim->model->nq) return -1;
+    pthread_mutex_lock(&sim->lock);
+    *out = sim->data->qpos[qpos_adr];
+    pthread_mutex_unlock(&sim->lock);
+    return 0;
+}
+
 void *spikehat_sim_get_model(spikehat_t *hat) {
     if (!hat) return NULL;
     return ((sim_spikehat_t *)hat)->model;
