@@ -86,6 +86,10 @@ _lib.spikehat_force_get_force.argtypes = [_hat_p, ctypes.c_int, _int_p]
 _lib.spikehat_sleep.restype  = None
 _lib.spikehat_sleep.argtypes = [_hat_p, ctypes.c_float]
 
+# --- シム専用拡張API (spikehat_sim.h) ---
+_lib.spikehat_sim_set_ctrl.restype  = ctypes.c_int
+_lib.spikehat_sim_set_ctrl.argtypes = [_hat_p, ctypes.c_int, ctypes.c_double]
+
 # デバイス種別定数 (spikehat.h の enum に対応)
 DEVICE_NONE     = 0
 DEVICE_MOTOR_M  = 1
@@ -238,6 +242,14 @@ class SpikeHat:
                                           ctypes.byref(f)) != 0:
             raise RuntimeError("フォースデータなし")
         return f.value
+
+    def sim_set_ctrl(self, actuator_id: int, value: float) -> int:
+        """
+        シム専用: アクチュエーターのctrl値を直接設定する（spikehat_sim.h）。
+        actuator_id は mujoco.mj_name2id(model, mjOBJ_ACTUATOR, name) で取得する。
+        """
+        return _lib.spikehat_sim_set_ctrl(self._hat, actuator_id,
+                                           ctypes.c_double(value))
 
     def sleep(self, seconds: float) -> None:
         """

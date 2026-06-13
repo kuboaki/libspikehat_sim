@@ -103,12 +103,14 @@ static void _update_position(sim_spikehat_t *sim) {
 
 /** 1ステップ進めて累積角度を更新する */
 static void sim_step(sim_spikehat_t *sim) {
+    pthread_mutex_lock(&sim->lock);
     /* モーターのctrlのみ上書きする（他のアクチュエーターは保持） */
     if (sim->ctrl_id >= 0 && sim->ctrl_id < sim->model->nu) {
         sim->data->ctrl[sim->ctrl_id] = sim->ctrl;
     }
     mj_step(sim->model, sim->data);
     _update_position(sim);
+    pthread_mutex_unlock(&sim->lock);
 }
 
 /** seconds 秒分のシミュレーションステップを実行する */
@@ -155,6 +157,10 @@ spikehat_t *spikehat_open(const char *device) {
         free(sim);
         return NULL;
     }
+
+    /* mj_step（バックグラウンドスレッド）と spikehat_sim_set_ctrl
+     * （ビューア側スレッド）が data に同時アクセスするのを防ぐ */
+    pthread_mutex_init(&sim->lock, NULL);
 
     /* 速度スケールの設定
      * 環境変数 SPIKEHAT_SIM_SPEED_SCALE で上書き可能（デフォルト: 1.0 = 実機と同じ時間感覚）
@@ -217,6 +223,7 @@ void spikehat_close(spikehat_t *hat) {
 
     mj_deleteData(sim->data);
     mj_deleteModel(sim->model);
+    pthread_mutex_destroy(&sim->lock);
     free(sim);
 
     fprintf(stderr, "[sim] spikehat_close: 終了\n");
@@ -521,7 +528,9 @@ int spikehat_sim_set_ctrl(spikehat_t *hat, int actuator_id, double val) {
     if (!hat || actuator_id < 0) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
     if (actuator_id >= sim->model->nu) return -1;
+    pthread_mutex_lock(&sim->lock);
     sim->data->ctrl[actuator_id] = val;
+    pthread_mutex_unlock(&sim->lock);
     return 0;
 }
 
