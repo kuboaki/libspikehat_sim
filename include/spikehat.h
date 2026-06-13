@@ -56,6 +56,7 @@ int spikehat_motor_stop(spikehat_t *hat, int port);
 int spikehat_motor_coast(spikehat_t *hat, int port);
 int spikehat_motor_run_for_seconds(spikehat_t *hat, int port, float seconds, int speed);
 int spikehat_motor_run_for_degrees(spikehat_t *hat, int port, int degrees, int speed);
+int spikehat_motor_run_to_position(spikehat_t *hat, int port, int position_deg, int speed);
 int spikehat_motor_get_speed(spikehat_t *hat, int port, int *speed);
 int spikehat_motor_get_position(spikehat_t *hat, int port, int *degrees);
 

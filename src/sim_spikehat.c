@@ -318,6 +318,43 @@ int spikehat_motor_run_for_degrees(spikehat_t *hat, int port,
     return 0;
 }
 
+int spikehat_motor_run_to_position(spikehat_t *hat, int port,
+                                   int position_deg, int speed) {
+    if (!hat || speed == 0) return -1;
+    sim_spikehat_t *sim = (sim_spikehat_t *)hat;
+    if (sim->qpos_adr < 0 || sim->ctrl_id < 0) return -1;
+
+    /* gear の符号を取得して回転方向を決める */
+    double gear = sim->model->actuator_gear[sim->ctrl_id * 6];
+    double direction = (gear >= 0) ? 1.0 : -1.0;
+
+    /* 目標位置までの移動量（degrees相当）を direction を考慮して算出 */
+    double cur           = sim->position_deg;
+    double target        = (double)position_deg;
+    double degrees_equiv = (target - cur) * direction;
+
+    /* 速度の符号で方向を決める */
+    int actual_speed = (degrees_equiv >= 0) ? abs(speed) : -abs(speed);
+    sim->ctrl = actual_speed * SPEED_TO_CTRL;
+
+    /* target に達するまでステップ実行 */
+    int max_steps = (int)(10.0 / sim->model->opt.timestep);
+    for (int i = 0; i < max_steps; i++) {
+        sim_step(sim);
+        double pos = sim->position_deg;
+        if (degrees_equiv >= 0 && direction * (pos - target) >= 0.0) break;
+        if (degrees_equiv <  0 && direction * (pos - target) <= 0.0) break;
+    }
+
+    /* ブレーキ: ctrl=0 にして慣性が収まるまで少し待つ */
+    sim->ctrl = 0.0;
+    int settle = (int)(0.5 / sim->model->opt.timestep);
+    for (int i = 0; i < settle; i++) {
+        sim_step(sim);
+    }
+    return 0;
+}
+
 int spikehat_motor_get_speed(spikehat_t *hat, int port, int *speed) {
     if (!hat || !speed) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
