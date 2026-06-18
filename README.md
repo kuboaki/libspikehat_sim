@@ -121,25 +121,20 @@ libspikehat_sim/
 
 ## モーター回転方向について
 
-SPIKE Prime の実機とMuJoCo では回転方向の定義が逆です。
+SPIKE Prime の実機とMuJoCo では回転方向の定義が異なります。
 
 | | 正のspeed/power | エンコーダ値 |
 |---|---|---|
 | 実機（SPIKE Prime） | 時計回り（CW） | 増加 |
 | MuJoCo `axis="0 0 1"` | 反時計回り（CCW） | qpos増加 |
+| MuJoCo `axis="0 0 -1"` | 時計回り（CW） | qpos増加 |
 
-この差を `sim_spikehat.c` 内部で吸収しています：
-
-- `_speed_to_ctrl(speed)` : `-(speed / 100)` に変換（符号反転）
-- `_pwm_to_ctrl(power)`   : `-power` に変換（符号反転）
-- `_update_position()`    : delta を符号反転して `position_deg` に加算
-
-これにより、アプリケーションコードや XML の `motor_joint axis` を変更することなく、
-実機と同じ符号・向きでモーターを制御できます。
+XMLの `motor_joint` に `axis="0 0 -1"` を設定することで、正の ctrl が CW 回転となり、
+実機と同じ方向・符号の対応になります。`sim_spikehat.c` 側での符号変換は不要です。
 
 ```
-speed=+50 → ctrl=-0.5 → MuJoCo CW（qpos減少） → position_deg増加（実機と同じ）
-speed=-50 → ctrl=+0.5 → MuJoCo CCW（qpos増加）→ position_deg減少（実機と同じ）
+speed=+50 → ctrl=+0.5 → MuJoCo CW（axis="0 0 -1"）→ position_deg増加（実機と同じ）
+speed=-50 → ctrl=-0.5 → MuJoCo CCW（axis="0 0 -1"）→ position_deg減少（実機と同じ）
 ```
 
 ### 確認方法

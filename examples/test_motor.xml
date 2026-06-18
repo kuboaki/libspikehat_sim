@@ -18,7 +18,7 @@
             contype="0" conaffinity="0"/>
       <body name="motor_rotor" pos="0.0001 0.0239 0.0160">
         <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
-        <joint name="motor_joint" type="hinge" axis="0 0 1"
+        <joint name="motor_joint" type="hinge" axis="0 0 -1"
                damping="0.55" armature="0.001"/>
         <geom type="mesh" mesh="motor_rotor_mesh"
               rgba="0.8 0.4 0.1 1"
