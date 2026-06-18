@@ -10,6 +10,19 @@
  *   - time.sleep 相当は spikehat_motor_run_for_seconds 内でステップ実行
  *   - speed (-100〜+100) を ctrl (-1〜+1) に変換するスケール: 1/100
  *
+ * 【モーター回転方向の扱い】
+ *   実機（SPIKE Prime）の約束:
+ *     正の speed/power → CW（時計回り）→ エンコーダ値増加
+ *   MuJoCo の約束（axis="0 0 1" 右手座標系）:
+ *     正の ctrl → CCW（反時計回り）→ qpos 増加
+ *   これらは逆向きなので、C 側で符号を反転して吸収する:
+ *     _pwm_to_ctrl()  : power → ctrl = -power
+ *     _speed_to_ctrl(): speed → ctrl = -(speed/100)
+ *   _update_position() でも delta の符号を反転し、
+ *   CW 回転（delta 負）→ position_deg 増加 となるよう統一する。
+ *   これにより XML の motor_joint axis は変更不要で、
+ *   すべての speed/power の変換はヘルパー関数に集約される。
+ *
  * 【ビルド方法】
  *   MuJoCo のヘッダーとライブラリをリンクする:
  *   cc -shared -fPIC -o libspikehat_sim.so sim_spikehat.c \
@@ -88,6 +101,22 @@ typedef struct sim_spikehat {
 
 /* ── ヘルパー関数 ────────────────────────────────────────────────── */
 
+/**
+ * 実機 speed (-100〜+100) → MuJoCo ctrl (-1〜+1) 変換。
+ * 符号を反転することで実機（正=CW）と MuJoCo（正=CCW）の差を吸収する。
+ */
+static double _speed_to_ctrl(int speed) {
+    return -(speed * SPEED_TO_CTRL);
+}
+
+/**
+ * 実機 pwm power (-1〜+1) → MuJoCo ctrl (-1〜+1) 変換。
+ * 符号を反転することで実機（正=CW）と MuJoCo（正=CCW）の差を吸収する。
+ */
+static double _pwm_to_ctrl(float power) {
+    return -(double)power;
+}
+
 static void _update_position(sim_spikehat_t *sim) {
     if (sim->qpos_adr < 0) return;  /* モーターなし */
     double curr = sim->data->qpos[sim->qpos_adr];
@@ -99,7 +128,8 @@ static void _update_position(sim_spikehat_t *sim) {
                   ? sim->model->actuator_gear[sim->ctrl_id * 6]
                   : 1.0;
     double direction = (gear >= 0) ? 1.0 : -1.0;
-    sim->position_deg += direction * delta * (180.0 / M_PI);
+    /* delta を反転: CW（delta<0）→ position_deg 増加（実機エンコーダと同じ符号）*/
+    sim->position_deg -= direction * delta * (180.0 / M_PI);
     sim->prev_qpos = curr;
 }
 
@@ -285,7 +315,7 @@ int spikehat_motor_pwm(spikehat_t *hat, int port, float power) {
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
     if (power >  1.0f) power =  1.0f;
     if (power < -1.0f) power = -1.0f;
-    sim->ctrl = (double)power;
+    sim->ctrl = _pwm_to_ctrl(power);
     sim_step(sim);
     return 0;
 }
@@ -293,7 +323,7 @@ int spikehat_motor_pwm(spikehat_t *hat, int port, float power) {
 int spikehat_motor_start(spikehat_t *hat, int port, int speed) {
     if (!hat) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
-    sim->ctrl = speed * SPEED_TO_CTRL;
+    sim->ctrl = _speed_to_ctrl(speed);
     sim_step(sim);
     return 0;
 }
@@ -314,7 +344,7 @@ int spikehat_motor_run_for_seconds(spikehat_t *hat, int port,
                                    float seconds, int speed) {
     if (!hat) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
-    sim->ctrl = speed * SPEED_TO_CTRL;
+    sim->ctrl = _speed_to_ctrl(speed);
     sim_sleep(sim, (double)seconds);
     sim->ctrl = 0.0;
     sim_step(sim);
@@ -338,7 +368,7 @@ int spikehat_motor_run_for_degrees(spikehat_t *hat, int port,
 
     /* 速度の符号で方向を決める */
     int actual_speed = (degrees >= 0) ? abs(speed) : -abs(speed);
-    sim->ctrl = actual_speed * SPEED_TO_CTRL;
+    sim->ctrl = _speed_to_ctrl(actual_speed);
 
     double stop_at = target;
 
@@ -377,7 +407,7 @@ int spikehat_motor_run_to_position(spikehat_t *hat, int port,
 
     /* 速度の符号で方向を決める */
     int actual_speed = (degrees_equiv >= 0) ? abs(speed) : -abs(speed);
-    sim->ctrl = actual_speed * SPEED_TO_CTRL;
+    sim->ctrl = _speed_to_ctrl(actual_speed);
 
     /* target に達するまでステップ実行 */
     int max_steps = (int)(10.0 / sim->model->opt.timestep);
@@ -400,7 +430,8 @@ int spikehat_motor_run_to_position(spikehat_t *hat, int port,
 int spikehat_motor_get_speed(spikehat_t *hat, int port, int *speed) {
     if (!hat || !speed) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
-    *speed = (int)round(sim->ctrl / SPEED_TO_CTRL);
+    /* ctrl は符号反転済みなので、speed に戻すときも反転する */
+    *speed = (int)round(-sim->ctrl / SPEED_TO_CTRL);
     return 0;
 }
 

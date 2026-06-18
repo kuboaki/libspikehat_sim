@@ -1,0 +1,7 @@
+[project]
+name = "libspikehat-sim"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "mujoco>=3.0.0",
+]

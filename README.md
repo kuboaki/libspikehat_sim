@@ -119,6 +119,38 @@ libspikehat_sim/
 └── build/                  # ビルド成果物（gitignore対象）
 ```
 
+## モーター回転方向について
+
+SPIKE Prime の実機とMuJoCo では回転方向の定義が逆です。
+
+| | 正のspeed/power | エンコーダ値 |
+|---|---|---|
+| 実機（SPIKE Prime） | 時計回り（CW） | 増加 |
+| MuJoCo `axis="0 0 1"` | 反時計回り（CCW） | qpos増加 |
+
+この差を `sim_spikehat.c` 内部で吸収しています：
+
+- `_speed_to_ctrl(speed)` : `-(speed / 100)` に変換（符号反転）
+- `_pwm_to_ctrl(power)`   : `-power` に変換（符号反転）
+- `_update_position()`    : delta を符号反転して `position_deg` に加算
+
+これにより、アプリケーションコードや XML の `motor_joint axis` を変更することなく、
+実機と同じ符号・向きでモーターを制御できます。
+
+```
+speed=+50 → ctrl=-0.5 → MuJoCo CW（qpos減少） → position_deg増加（実機と同じ）
+speed=-50 → ctrl=+0.5 → MuJoCo CCW（qpos増加）→ position_deg減少（実機と同じ）
+```
+
+### 確認方法
+
+```bash
+cd /Users/kuboaki/Projects/libspikehat_sim
+PYTHONPATH=python uv run mjpython examples/test_motor_viewer2.py
+```
+
+ビューアで正のspeedのとき時計回り（CW）になることを目視で確認できます。
+
 ## フォースセンサーについて
 
 SPIKE Prime フォースセンサーの生値の範囲は **0〜100**（0〜1024ではない）。
