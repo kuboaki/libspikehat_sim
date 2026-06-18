@@ -150,19 +150,18 @@ install(FILES include/spikehat.h
 
 # ── macOS: mujoco.framework シンボリックリンクのセットアップ ─────────
 if(APPLE)
-    execute_process(
-        COMMAND python3 -c
-            "import mujoco, os; print(os.path.dirname(mujoco.__file__))"
-        OUTPUT_VARIABLE MUJOCO_PY_DIR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
+    # MUJOCO_ROOT はすでに検出済みのパスを使う
+    set(MUJOCO_PY_DIR ${MUJOCO_ROOT})
+    # dylib のバージョンを動的に取得
+    file(GLOB _MUJOCO_DYLIB_FILES "${MUJOCO_PY_DIR}/libmujoco.*.dylib")
+    list(GET _MUJOCO_DYLIB_FILES 0 _DYLIB)
+    get_filename_component(_DYLIB_NAME "${_DYLIB}" NAME)
     set(_FWDIR "${MUJOCO_PY_DIR}/mujoco.framework/Versions/A")
-    set(_DYLIB "${MUJOCO_PY_DIR}/libmujoco.3.8.1.dylib")
     file(MAKE_DIRECTORY ${_FWDIR})
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E create_symlink
             ${_DYLIB}
-            "${_FWDIR}/libmujoco.3.8.1.dylib"
+            "${_FWDIR}/${_DYLIB_NAME}"
     )
-    message(STATUS "mujoco.framework symlink: ${_FWDIR}")
+    message(STATUS "mujoco.framework symlink: ${_FWDIR}/${_DYLIB_NAME}")
 endif()
