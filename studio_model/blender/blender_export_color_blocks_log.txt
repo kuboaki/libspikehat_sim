@@ -1,0 +1,188 @@
+# blender_export_color_blocks_log
+# LOG_PATH: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_blocks_log.txt
+
+============================================================
+シーン内オブジェクト一覧
+============================================================
+  [MESH ] 3022.dat                                 parent=tile_black  verts=196
+  [MESH ] 3022.dat.001                             parent=tile_blue  verts=196
+  [MESH ] 3022.dat.002                             parent=tile_green  verts=196
+  [MESH ] 3022.dat.003                             parent=tile_yellow  verts=196
+  [MESH ] 3022.dat.004                             parent=tile_red  verts=196
+  [MESH ] 3022.dat.005                             parent=tile_white  verts=196
+  [MESH ] 3022.dat.006                             parent=tile_brown  verts=196
+  [MESH ] 3068b.dat                                parent=tile_black  verts=145
+  [MESH ] 3068b.dat.001                            parent=tile_blue  verts=145
+  [MESH ] 3068b.dat.002                            parent=tile_green  verts=145
+  [MESH ] 3068b.dat.003                            parent=tile_yellow  verts=145
+  [MESH ] 3068b.dat.004                            parent=tile_red  verts=145
+  [MESH ] 3068b.dat.005                            parent=tile_white  verts=145
+  [MESH ] 3068b.dat.006                            parent=tile_brown  verts=145
+  [MESH ] 3069a.dat                                parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.001                            parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.002                            parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.003                            parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.004                            parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.005                            parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.006                            parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.007                            parent=gap_cover  verts=48
+  [MESH ] 3795.dat                                 parent=base_plate  verts=588
+  [MESH ] 3795.dat.001                             parent=base_plate  verts=588
+  [MESH ] 3795.dat.002                             parent=base_plate  verts=588
+  [MESH ] 3795.dat.003                             parent=base_plate  verts=588
+  [EMPTY] base_plate                               parent=color_blocks.io
+  [EMPTY] color_blocks.io                          parent=(root)
+  [EMPTY] gap_cover                                parent=color_blocks.io
+  [EMPTY] tile_black                               parent=color_blocks.io
+  [EMPTY] tile_blue                                parent=color_blocks.io
+  [EMPTY] tile_brown                               parent=color_blocks.io
+  [EMPTY] tile_green                               parent=color_blocks.io
+  [EMPTY] tile_red                                 parent=color_blocks.io
+  [EMPTY] tile_white                               parent=color_blocks.io
+  [EMPTY] tile_yellow                              parent=color_blocks.io
+
+サブモデル検索結果:
+  base_plate : OK
+  gap_cover  : OK
+  tile_black  : OK
+  tile_blue   : OK
+  tile_green  : OK
+  tile_yellow : OK
+  tile_red    : OK
+  tile_white  : OK
+  tile_brown  : OK
+
+============================================================
+共有オフセット計算（全パーツ統合bbox）
+============================================================
+  全パーツ統合bbox:
+    X[-139.9, 339.9]  Y[-161.9, -122.1]  Z[-7.9, 16.0] LDU
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+
+============================================================
+base_plate 処理（base_plate + gap_cover）
+============================================================
+  MESHオブジェクト数: 12
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/base_plate.stl
+  頂点数: 2736  三角面数: 2448
+
+============================================================
+tile_black 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_black.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+tile_blue 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_blue.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+tile_green 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_green.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+tile_yellow 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_yellow.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+tile_red 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_red.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+tile_white 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_white.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+tile_brown 処理
+============================================================
+  MESHオブジェクト数: 2
+  共有オフセット: (-100.00, 142.00, 7.87) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/tile_brown.stl
+  頂点数: 341  三角面数: 286
+
+============================================================
+各タイルの中心pos（MuJoCo XML 参考値）
+============================================================
+  ※ shared_offsetを適用したMuJoCo座標系でのXY中心・Z底面
+
+  tile_black  : pos="0.0720 -0.0000 0.0032"  half_h=0.0032m
+  tile_blue   : pos="0.0480 -0.0000 0.0032"  half_h=0.0032m
+  tile_green  : pos="0.0240 -0.0000 0.0032"  half_h=0.0032m
+  tile_yellow : pos="-0.0000 -0.0000 0.0032"  half_h=0.0032m
+  tile_red    : pos="-0.0240 -0.0000 0.0032"  half_h=0.0032m
+  tile_white  : pos="-0.0480 -0.0000 0.0032"  half_h=0.0032m
+  tile_brown  : pos="-0.0720 -0.0000 0.0032"  half_h=0.0032m
+
+============================================================
+MuJoCo XML スニペット（参考）
+============================================================
+
+<!-- asset セクション -->
+<mesh name="base_plate_mesh" file="meshes/base_plate.stl"/>
+<mesh name="tile_black_mesh" file="meshes/tile_black.stl"/>
+<mesh name="tile_blue_mesh" file="meshes/tile_blue.stl"/>
+<mesh name="tile_green_mesh" file="meshes/tile_green.stl"/>
+<mesh name="tile_yellow_mesh" file="meshes/tile_yellow.stl"/>
+<mesh name="tile_red_mesh" file="meshes/tile_red.stl"/>
+<mesh name="tile_white_mesh" file="meshes/tile_white.stl"/>
+<mesh name="tile_brown_mesh" file="meshes/tile_brown.stl"/>
+
+<!-- worldbody セクション -->
+<body name="color_blocks" pos="0 0 0">
+  <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
+  <geom name="base_plate_geom" type="mesh" mesh="base_plate_mesh"
+        contype="0" conaffinity="0" rgba="0.388 0.373 0.322 1"/>
+  <!-- tile_black -->
+  <geom name="tile_black_geom" type="mesh" mesh="tile_black_mesh"
+        pos="0.0720 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.027 0.027 0.027 1"/>
+  <!-- tile_blue -->
+  <geom name="tile_blue_geom" type="mesh" mesh="tile_blue_mesh"
+        pos="0.0480 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.000 0.089 0.515 1"/>
+  <!-- tile_green -->
+  <geom name="tile_green_geom" type="mesh" mesh="tile_green_mesh"
+        pos="0.0240 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.000 0.373 0.165 1"/>
+  <!-- tile_yellow -->
+  <geom name="tile_yellow_geom" type="mesh" mesh="tile_yellow_mesh"
+        pos="-0.0000 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.992 0.843 0.000 1"/>
+  <!-- tile_red -->
+  <geom name="tile_red_geom" type="mesh" mesh="tile_red_mesh"
+        pos="-0.0240 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.578 0.010 0.002 1"/>
+  <!-- tile_white -->
+  <geom name="tile_white_geom" type="mesh" mesh="tile_white_mesh"
+        pos="-0.0480 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.991 0.991 0.991 1"/>
+  <!-- tile_brown -->
+  <geom name="tile_brown_geom" type="mesh" mesh="tile_brown_mesh"
+        pos="-0.0720 -0.0000 0.0032"
+        contype="0" conaffinity="0" rgba="0.294 0.157 0.071 1"/>
+</body>
+
+# ログ出力完了: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_blocks_log.txt

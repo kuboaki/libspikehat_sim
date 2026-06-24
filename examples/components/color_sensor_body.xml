@@ -1,0 +1,35 @@
+<!--
+  color_sensor_body.xml  —  SPIKE Prime カラーセンサー MuJoCo コンポーネント
+
+  使い方:
+    1. 利用側モデルの <asset> セクションに以下を追加:
+         <mesh name="color_sensor_mesh" file="meshes/color_sensor.stl"/>
+       （meshdir が examples/ を指している場合。パスは環境に合わせて調整する）
+
+    2. センサーを搭載する <body> の中で <include> する:
+         <body name="sensor_mount" pos="X Y Z">
+           <include file="components/color_sensor_body.xml"/>
+         </body>
+
+  座標系・向き:
+    - euler="-90 0 0" により、センサー検出面が body local +Y → 世界 -Z（下向き）に回転
+    - color_site はセンサーボディ内側（検出面から 5mm 内側）に配置
+    - レイキャストは -Z 方向（下向き）に発射される
+
+  搭載位置の決め方:
+    - Studio で自分のロボットモデルにセンサーを配置した組み合わせ .io を作成
+    - Blender でインポートし blender_export_color_sensor.py を実行
+    - 出力されたpos値を sensor_mount body の pos に使う
+    - 詳細は docs/using_color_sensor_component.md を参照
+-->
+<body name="color_sensor" euler="-90 0 0">
+  <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+  <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
+        contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
+  <!--
+    color_site の pos:
+      Y=0.007  : 検出面（Y_local=0.012）から 5mm 内側（ボディ外に出ない）
+      Z=0.012  : センサー奥行き方向（Z_local）の中心。親bodyのY補正量に応じて調整
+  -->
+  <site name="color_site" pos="0 0.007 0.012" size="0.005" rgba="1 1 0 1"/>
+</body>

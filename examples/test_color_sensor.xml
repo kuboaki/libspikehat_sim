@@ -8,21 +8,19 @@
   </visual>
 
   <!--
-    カラーセンサーテスト用モデル
+    カラーセンサーテスト用モデル（LEGOブロック版）
 
     構成:
       - color_sensor_body: カラーセンサー本体（スライダーで左右に移動）
-        - color_site: センサーの検出点（真下を向く）
-      - 色ブロック（左から右に並ぶ）:
-        - block_red    : 赤   (LEGO 4 Red)
-        - block_blue   : 青   (LEGO 1 Blue)
-        - block_yellow : 黄   (LEGO 14 Yellow)
-        - block_white  : 白   (LEGO 15 White)
-        - block_black  : 黒   (LEGO 26 Black)
-        - block_green  : 緑   (LEGO 6 Green)
+          STLはStudio標準向き（検出面Y+）。euler="-90 0 0"で検出面を下向き(-Z)に。
+          color_site: センサー検出点（下方向を向く）
+      - color_blocks: カラーブロック群（LEGOメッシュ）
+          base_plate: ベースプレート（白）
+          tile_black / tile_blue / tile_green / tile_yellow /
+          tile_red / tile_white / tile_brown: 各色ブロック
 
     操作:
-      - Controlスライダー "sensor_slide" でセンサーを左右に移動
+      - Controlスライダー "sensor_slide_ctrl" でセンサーを左右に移動
       - センサーが各色ブロックの上に来るとHSV値が変わる
 
     座標系:
@@ -30,15 +28,38 @@
       - Y軸: 前後
       - Z軸: 上下（プラスが上）
 
-    ブロック配置: X方向に0.032m（4ポッチ）間隔で並べる
+    ブロック配置（X軸）:
+      tile_black  : X=+0.0720
+      tile_blue   : X=+0.0480
+      tile_green  : X=+0.0240
+      tile_yellow : X= 0.0000
+      tile_red    : X=-0.0240
+      tile_white  : X=-0.0480
+      tile_brown  : X=-0.0720
+
+    センサー高さ:
+      ブロック上面(約10mm)の上方にセンサーを配置。
+      color_site のpos値はビューアで実測して微調整する。
   -->
 
   <asset>
-    <!-- 床のテクスチャ -->
     <texture name="grid" type="2d" builtin="checker"
              width="512" height="512"
              rgb1="0.7 0.7 0.7" rgb2="0.8 0.8 0.8"/>
-    <material name="grid_mat" texture="grid" texrepeat="4 4"/>
+    <material name="grid_mat" texture="grid" texrepeat="8 8"/>
+
+    <!-- カラーセンサーメッシュ -->
+    <mesh name="color_sensor_mesh" file="color_sensor.stl"/>
+
+    <!-- カラーブロックメッシュ -->
+    <mesh name="base_plate_mesh"  file="base_plate.stl"/>
+    <mesh name="tile_black_mesh"  file="tile_black.stl"/>
+    <mesh name="tile_blue_mesh"   file="tile_blue.stl"/>
+    <mesh name="tile_green_mesh"  file="tile_green.stl"/>
+    <mesh name="tile_yellow_mesh" file="tile_yellow.stl"/>
+    <mesh name="tile_red_mesh"    file="tile_red.stl"/>
+    <mesh name="tile_white_mesh"  file="tile_white.stl"/>
+    <mesh name="tile_brown_mesh"  file="tile_brown.stl"/>
   </asset>
 
   <worldbody>
@@ -50,66 +71,63 @@
           material="grid_mat" contype="1" conaffinity="1"/>
 
     <!-- ────────────────────────────────────────────────
-         色ブロック（床の上に固定配置）
-         高さ: 0.0096m（1.2ポッチ）
-         幅:   0.032m（4ポッチ）間隔
+         カラーブロック群（固定）
+         共有オフセットにより全メッシュの位置関係が正しく保たれる
     ──────────────────────────────────────────────── -->
+    <body name="color_blocks" pos="0 0 0">
+      <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
 
-    <!-- 赤ブロック (LEGO 4 Red: 0.578, 0.010, 0.002) -->
-    <geom name="block_red" type="box"
-          pos="-0.080 0 0.008" size="0.012 0.012 0.008"
-          rgba="0.578 0.010 0.002 1"
-          contype="0" conaffinity="0"/>
-
-    <!-- 青ブロック (LEGO 1 Blue: 0.000, 0.089, 0.515) -->
-    <geom name="block_blue" type="box"
-          pos="-0.048 0 0.008" size="0.012 0.012 0.008"
-          rgba="0.000 0.089 0.515 1"
-          contype="0" conaffinity="0"/>
-
-    <!-- 黄ブロック (LEGO 14 Yellow: 0.992, 0.843, 0.000) -->
-    <geom name="block_yellow" type="box"
-          pos="-0.016 0 0.008" size="0.012 0.012 0.008"
-          rgba="0.992 0.843 0.000 1"
-          contype="0" conaffinity="0"/>
-
-    <!-- 白ブロック (LEGO 15 White: 0.991, 0.991, 0.991) -->
-    <geom name="block_white" type="box"
-          pos="0.016 0 0.008" size="0.012 0.012 0.008"
-          rgba="0.991 0.991 0.991 1"
-          contype="0" conaffinity="0"/>
-
-    <!-- 黒ブロック (LEGO 26 Black: 0.027, 0.027, 0.027) -->
-    <geom name="block_black" type="box"
-          pos="0.048 0 0.008" size="0.012 0.012 0.008"
-          rgba="0.027 0.027 0.027 1"
-          contype="0" conaffinity="0"/>
-
-    <!-- 緑ブロック (LEGO 6 Green: 0.000, 0.373, 0.165) -->
-    <geom name="block_green" type="box"
-          pos="0.080 0 0.008" size="0.012 0.012 0.008"
-          rgba="0.000 0.373 0.165 1"
-          contype="0" conaffinity="0"/>
+      <!-- shared_offsetがSTLに焼き込み済みのため、全geomはpos="0 0 0" -->
+      <!-- LDraw color 8 = Dark Gray（検出対象色と混同しない背景色） -->
+      <geom name="base_plate_geom" type="mesh" mesh="base_plate_mesh"
+            contype="0" conaffinity="0" rgba="0.388 0.373 0.322 1"/>
+      <geom name="tile_black_geom" type="mesh" mesh="tile_black_mesh"
+            contype="0" conaffinity="0" rgba="0.027 0.027 0.027 1"/>
+      <geom name="tile_blue_geom" type="mesh" mesh="tile_blue_mesh"
+            contype="0" conaffinity="0" rgba="0.000 0.089 0.515 1"/>
+      <geom name="tile_green_geom" type="mesh" mesh="tile_green_mesh"
+            contype="0" conaffinity="0" rgba="0.000 0.373 0.165 1"/>
+      <geom name="tile_yellow_geom" type="mesh" mesh="tile_yellow_mesh"
+            contype="0" conaffinity="0" rgba="0.992 0.843 0.000 1"/>
+      <geom name="tile_red_geom" type="mesh" mesh="tile_red_mesh"
+            contype="0" conaffinity="0" rgba="0.578 0.010 0.002 1"/>
+      <geom name="tile_white_geom" type="mesh" mesh="tile_white_mesh"
+            contype="0" conaffinity="0" rgba="0.991 0.991 0.991 1"/>
+      <geom name="tile_brown_geom" type="mesh" mesh="tile_brown_mesh"
+            contype="0" conaffinity="0" rgba="0.294 0.157 0.071 1"/>
+    </body>
 
     <!-- ────────────────────────────────────────────────
          カラーセンサー本体
          スライダージョイントでX方向に移動
-         初期位置: 赤ブロックの上
+         euler="-90 0 0": Studio標準向き(検出面Y+)を下向き(-Z)に回転
+         初期位置: tile_black の上
     ──────────────────────────────────────────────── -->
-    <body name="color_sensor_body" pos="-0.080 0 0.030">
+    <!-- センサー初期位置: tile_yellow(X=0)の上、高さ0.034m
+         euler="-90 0 0": 検出面(body local +Y)を世界-Z(下向き)に回転
+         検出面高さ: body Z(0.034) - local Y offset(0.012) = 0.022m
+                   タイル上面(0.010m) + 1.5ビーム(0.012m) = 0.022m -->
+    <!-- センサー初期位置: tile_yellow(X=0)の上
+         euler="90 0 0": 検出面(body local -Y)を世界-Z(下向き)に回転
+         body Z=0.034: 検出面が世界Z=0.022m（タイル上面+1.5ビーム）になる高さ
+         body Y=-0.012: センサーをY方向中央に補正 -->
+    <!-- センサー初期位置: tile_yellow(X=0)の上
+         euler="-90 0 0": 検出面(body local +Y)を世界-Z(下向き)に回転
+         body Z=0.034: 検出面が世界Z=0.022m（タイル上面+1.5ビーム）になる高さ
+         body Y=-0.012: センサーSTLのZ範囲[0,0.023]がY=[−0.012,+0.011]に広がるのを補正 -->
+    <body name="color_sensor_body" pos="0 -0.012 0.034" euler="-90 0 0">
       <joint name="sensor_slide" type="slide" axis="1 0 0"
-             range="-0.010 0.170" damping="10.0"/>
+             range="-0.090 0.090" damping="10.0"/>
       <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
 
-      <!-- センサー本体（視覚化用） -->
-      <geom name="sensor_body_geom" type="box"
-            pos="0 0 0" size="0.010 0.010 0.005"
-            rgba="0.3 0.3 0.3 0.8"
-            contype="0" conaffinity="0"/>
+      <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
+            contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
 
-      <!-- 検出点（真下を向く） -->
-      <site name="color_site" pos="0 0 -0.005"
-            size="0.005" rgba="1 1 0 1"/>
+      <!-- 検出点: センサーボディの内側（検出面から球半径分=5mm内側）に配置
+           euler="-90 0 0" 後: world Z = body_Z - Y_local = 0.034 - 0.007 = 0.027m
+           siteがセンサーボディ外に出ないため、低い位置への配置でも干渉しない
+           Z_local=0.012 → world Y=0（センサー奥行き中心に補正） -->
+      <site name="color_site" pos="0 0.007 0.012" size="0.005" rgba="1 1 0 1"/>
     </body>
 
   </worldbody>
@@ -117,7 +135,7 @@
   <!-- スライダーアクチュエーター -->
   <actuator>
     <position name="sensor_slide_ctrl" joint="sensor_slide"
-              kp="100" ctrllimited="true" ctrlrange="-0.010 0.170"/>
+              kp="100" ctrllimited="true" ctrlrange="-0.090 0.090"/>
   </actuator>
 
   <!-- センサー位置センサー -->

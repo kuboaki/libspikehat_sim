@@ -45,11 +45,32 @@ def read_color():
     return h, s, v, gname
 
 print("ビューアを起動します。sensor_slide_ctrl を動かしてください。")
-print("ブロック配置（左→右）: 赤 / 青 / 黄 / 白 / 黒 / 緑")
+
+# デバッグ: 各タイルのgeomワールド位置とcolor_siteの初期位置を表示
+mujoco.mj_kinematics(model, data)
+sp = data.site_xpos[color_site_id]
+print(f"color_site 初期ワールド座標: x={sp[0]:.4f} y={sp[1]:.4f} z={sp[2]:.4f}")
+tile_names = ["tile_yellow_geom","tile_red_geom","tile_black_geom","tile_brown_geom"]
+for tname in tile_names:
+    gid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, tname)
+    if gid >= 0:
+        body_id = model.geom_bodyid[gid]
+        bpos = data.xpos[body_id]
+        print(f"  {tname}: body_pos y={bpos[1]:.4f}")
 
 prev_gname = None
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
+    # 初期カメラ設定: color_blocksがちょうど収まるよう調整
+    # center: タイル列の中心付近(X=0, Y=0, Z=0.02)
+    # extent: タイル列の幅(約0.16m)に合わせる
+    model.stat.center[:] = [0.0, 0.0, 0.02]
+    model.stat.extent    = 0.10
+    viewer.cam.lookat[:] = model.stat.center
+    viewer.cam.distance  = model.stat.extent * 3.0
+    viewer.cam.azimuth   = 130.0
+    viewer.cam.elevation = -30.0
+
     while viewer.is_running():
         mujoco.mj_step(model, data)
         viewer.sync()

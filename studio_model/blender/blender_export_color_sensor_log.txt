@@ -1,0 +1,45 @@
+# blender_export_color_sensor_log
+# LOG_PATH: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_sensor_log.txt
+
+============================================================
+シーン内オブジェクト一覧
+============================================================
+  [MESH ] 37308.dat                                parent=color_sensor.io  verts=7346
+  [EMPTY] color_sensor.io                          parent=(root)
+
+ルートEMPTYオブジェクト: ['color_sensor.io']
+収集MESHオブジェクト数: 1
+
+============================================================
+color_sensor 処理
+============================================================
+  MESHオブジェクト数: 1
+  統合bbox (変換前):
+    X[-54.9, 4.9]  Y[-80.8, -22.0]  Z[0.1, 57.9] LDU
+  オフセット: (25.00, 51.43, -0.10) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/color_sensor.stl
+  頂点数: 7346  三角面数: 6816
+  MuJoCo上のサイズ(参考): W=0.0239m  D=0.0235m  H=0.0231m
+  検出面 MuJoCo body local Y: 0.0118 m  (Blender Y_min=-80.8 LDU)
+  site Y (内側5mm): 0.0068 m
+  → color_site pos="0 0.0068 Z_center"  (euler="-90 0 0"で世界-Z=下向き)
+
+============================================================
+MuJoCo XML スニペット（参考）
+============================================================
+
+<!-- color_sensor_body.xml に記述するスニペット -->
+<!-- センサーの向き:
+     STLはStudio標準向き（検出面がbody local +Y方向）
+     euler="-90 0 0" で検出面を世界-Z（下向き）に回転
+     color_site pos Y = 検出面のbody local Y座標（自動計算値: 0.0068m）-->
+<body name="color_sensor_body" pos="0 -0.012 0.034" euler="-90 0 0">
+  <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+  <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
+        contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
+  <!-- Z_centerはセンサーSTLのZ範囲中心(≈half_Z)で補正: world Y=0に揃える -->
+  <site name="color_site" pos="0 0.0068 Z_center" size="0.005" rgba="1 1 0 1"/>
+</body>
+
+
+# ログ出力完了: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_sensor_log.txt
