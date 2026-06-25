@@ -7,9 +7,11 @@
        （meshdir が examples/ を指している場合。パスは環境に合わせて調整する）
 
     2. センサーを搭載する <body> の中で <include> する:
-         <body name="sensor_mount" pos="X Y Z">
+         <body name="sensor_mount" pos="X Y Z" euler="-90 0 0">
            <include file="components/color_sensor_body.xml"/>
          </body>
+       ※ MuJoCoの<include>はルート要素を除去して子要素（inertial/geom/site）を挿入する。
+          センサーの向き（euler）や位置（pos）は sensor_mount 側で指定すること。
 
   座標系・向き:
     - euler="-90 0 0" により、センサー検出面が body local +Y → 世界 -Z（下向き）に回転

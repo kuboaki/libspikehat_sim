@@ -1,0 +1,44 @@
+# blender_export_distance_sensor_log
+# LOG_PATH: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_distance_sensor_log.txt
+
+============================================================
+シーン内オブジェクト一覧
+============================================================
+  [MESH ] 37316c01.dat                             parent=distance_sensor  verts=7445
+  [EMPTY] distance_sensor                          parent=(root)
+
+ルートEMPTYオブジェクト: ['distance_sensor']
+収集MESHオブジェクト数: 1
+
+============================================================
+distance_sensor 処理
+============================================================
+  MESHオブジェクト数: 1
+  統合bbox (変換前):
+    X[-108.9, 30.9]  Y[-40.8, 38.0]  Z[0.1, 57.9] LDU
+  オフセット: (39.00, 1.43, -0.10) LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/distance_sensor.stl
+  頂点数: 7445  三角面数: 6118
+  MuJoCo上のサイズ(参考): W=0.0559m  D=0.0315m  H=0.0231m
+  検出面 MuJoCo body local Y: 0.0158 m
+  site Y (内側5mm): 0.0108 m
+  → distance_site pos="0 0.0108 0"  (euler="0 0 0"で世界+Y=前方)
+
+============================================================
+MuJoCo XML スニペット（参考）
+============================================================
+
+<!-- distance_sensor_body.xml に記述するスニペット -->
+<!-- センサーの向き:
+     STLはStudio標準向き（検出面がbody local +Y方向）
+     euler="0 0 0" で検出面が世界+Y（前方）を向く
+     distance_site pos Y = 検出面から5mm内側（自動計算値: 0.0108m） -->
+<body name="distance_sensor" euler="0 0 0">
+  <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+  <geom name="distance_sensor_geom" type="mesh" mesh="distance_sensor_mesh"
+        contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
+  <site name="distance_site" pos="0 0.0108 0" size="0.005" rgba="1 0 0 1"/>
+</body>
+
+
+# ログ出力完了: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_distance_sensor_log.txt

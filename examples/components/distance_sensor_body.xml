@@ -1,0 +1,42 @@
+<!--
+  distance_sensor_body.xml  —  SPIKE Prime 距離センサー MuJoCo コンポーネント
+
+  使い方:
+    1. 利用側モデルの <asset> セクションに以下を追加:
+         <mesh name="distance_sensor_mesh" file="meshes/distance_sensor.stl"/>
+
+    2. センサーを搭載する <body> の中で <include> する:
+         <body name="sensor_mount" pos="X Y Z">
+           <include file="components/distance_sensor_body.xml"/>
+         </body>
+       ※ MuJoCoの<include>はルート要素を除去して子要素（inertial/geom/site）を挿入する。
+          sensor_mount 側に <inertial> を別途書かないこと（重複エラーになる）。
+          センサーの向き（euler）は sensor_mount 側で指定すること。
+
+  座標系・向き:
+    - euler="0 0 0" （デフォルト）で検出面が世界+Y（前方）を向く
+    - distance_site はセンサーボディ内側（検出面から 5mm 内側）に配置
+    - レイキャストは +Y 方向（前方）に発射される
+
+  搭載位置の決め方:
+    - Studio で自分のロボットモデルにセンサーを配置した組み合わせ .io を作成
+    - Blender でインポートし blender_export_distance_sensor_test.py を実行
+    - 出力された pos 値を sensor_mount body の pos に使う
+    - センサーの向きが前方以外の場合は euler を調整する
+
+  センサーサイズ（参考）:
+    W=0.0559m  D=0.0315m  H=0.0231m
+-->
+<body name="distance_sensor" euler="0 0 0">
+  <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+  <!-- 外形表示用メッシュ（衝突なし） -->
+  <geom name="distance_sensor_geom" type="mesh" mesh="distance_sensor_mesh"
+        contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
+  <!-- 衝突判定用box（センサー外形に近似: W=55.9mm D=31.5mm H=23.1mm）
+       壁がセンサーを通り抜けないようにする -->
+  <geom name="distance_sensor_col" type="box"
+        pos="0 0 0.0116" size="0.0280 0.0158 0.0116"
+        contype="1" conaffinity="1" rgba="0.3 0.3 0.3 0"/>
+  <!-- distance_site: 検出面3D重心から算出（部品形状に忠実・再利用可能） -->
+  <site name="distance_site" pos="0 0.0108 0.0116" size="0.005" rgba="1 0 0 1"/>
+</body>

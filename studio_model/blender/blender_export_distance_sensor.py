@@ -1,23 +1,27 @@
 """
-Blender用スクリプト: color_sensor.io → color_sensor.stl
+Blender用スクリプト: distance_sensor.io → distance_sensor.stl
 
-対応モデル: color_sensor.io
+対応モデル: distance_sensor.io
   Blenderシーン上のオブジェクト:
     （ルートEMPTY）
-      └── 37308c01.dat 系MESHオブジェクト群
+      └── 37316c01.dat 系MESHオブジェクト群
 
-座標系:
-  LDraw座標系（Y下向き）から MuJoCo座標系（Z上向き）に変換する。
-    mj_x = -ldu_x * SCALE
-    mj_y = -ldu_y * SCALE
-    mj_z =  ldu_z * SCALE
+座標変換:
+  mj_x = -blender_x * SCALE
+  mj_y = -blender_y * SCALE
+  mj_z =  blender_z * SCALE
+
+センサー検出面:
+  LDraw -Z（パーツ前面）→ Blender -Y → MuJoCo +Y
+  standalone（identity回転）での body local 検出面方向 = +Y
+  → euler="0 0 0" で検出面が世界+Y（前方）を向く
 
 出力:
-  color_sensor.stl … センサー外形（XY中心・Z底面=0）
+  distance_sensor.stl … センサー外形（XY中心・Z底面=0）
 
 使い方:
   1. Blenderを起動してデフォルトオブジェクトを削除
-  2. File → Import → LDraw で color_sensor.io をインポート（Scale=1.0）
+  2. File → Import → LDraw で distance_sensor.io をインポート（Scale=1.0）
   3. このスクリプトをBlenderのスクリプトエディタで開き「スクリプトを実行」
 """
 
@@ -29,7 +33,7 @@ import numpy as np
 from stl import mesh as stl_mesh
 
 OUTPUT_DIR = "/Users/kuboaki/Projects/libspikehat_sim/examples/meshes"
-LOG_PATH   = "/Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_sensor_log.txt"
+LOG_PATH   = "/Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_distance_sensor_log.txt"
 SCALE = 0.0004  # LDU → m
 
 
@@ -51,7 +55,7 @@ class _Tee:
 
 _tee = _Tee(LOG_PATH)
 sys.stdout = _tee
-print("# blender_export_color_sensor_log")
+print("# blender_export_distance_sensor_log")
 print(f"# LOG_PATH: {LOG_PATH}")
 
 
@@ -83,13 +87,9 @@ def combined_bbox(meshes):
 # ── STL エクスポート ──────────────────────────────────────
 
 def export_stl(meshes, out_filename, center_mode="bottom_z"):
-    """
-    center_mode: 'bottom_z' = XY中心 + Z底面を0
-                 'center'   = XYZ中心を0
-    """
     if not meshes:
         print("  ERROR: メッシュリストが空です")
-        return
+        return None
 
     print(f"  MESHオブジェクト数: {len(meshes)}")
 
@@ -144,12 +144,13 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
     h = (z1 - z0) * SCALE
     print(f"  MuJoCo上のサイズ(参考): W={w:.4f}m  D={d:.4f}m  H={h:.4f}m")
 
+    # 検出面位置の計算
+    # Blender -Y (y0, 最小値) = LDraw -Z（センサー前面＝検出面）→ MuJoCo +Y
+    # bottom_z centering後: MuJoCo Y of detection face = -(y0 + dy) * SCALE
     # ── 検出面の3D重心からsite位置を計算 ──────────────────
     # 検出面 = Blender Y_min 付近の頂点群（LDraw -Z = センサー前面）
-    # 重心の X, Y, Z をそのままbody local MuJoCo座標に変換する
-    # → 部品形状に忠実で、どんなモデルでも再利用できる
-    FACE_TOL  = 2.0   # 検出面とみなすY方向の許容幅[LDU]
-    SITE_RADIUS = 0.005  # siteをボディ内側に5mm引き込む
+    FACE_TOL    = 2.0
+    SITE_RADIUS = 0.005
 
     face_verts = []
     for obj in meshes:
@@ -177,7 +178,7 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
         site_x, site_y, site_z = 0.0, -(y0+dy)*SCALE - SITE_RADIUS, (z0+z1)/2*SCALE
         print("  WARNING: 検出面頂点未検出、近似値を使用")
 
-    print(f"  → color_site pos=\"{site_x:.4f} {site_y:.4f} {site_z:.4f}\"")
+    print(f"  → distance_site pos=\"{site_x:.4f} {site_y:.4f} {site_z:.4f}\"")
     return site_x, site_y, site_z
 
 
@@ -194,7 +195,6 @@ for o in sorted(bpy.data.objects, key=lambda x: x.name):
 
 # ── メッシュ収集 ──────────────────────────────────────────
 
-# インポートされたシーンのルートEMPTYを探す（.ioファイル名のオブジェクト）
 roots = [o for o in bpy.data.objects if o.parent is None and o.type == 'EMPTY']
 print(f"\nルートEMPTYオブジェクト: {[r.name for r in roots]}")
 
@@ -204,39 +204,44 @@ for root in roots:
 
 print(f"収集MESHオブジェクト数: {len(all_meshes)}")
 
-# ── color_sensor STL エクスポート ─────────────────────────
+
+# ── distance_sensor STL エクスポート ──────────────────────
 
 print("\n" + "=" * 60)
-print("color_sensor 処理")
+print("distance_sensor 処理")
 print("=" * 60)
 
 result = export_stl(
     meshes       = all_meshes,
-    out_filename = "color_sensor.stl",
+    out_filename = "distance_sensor.stl",
     center_mode  = "bottom_z",
 )
+
+if result:
+    sx_str = f"{result[0]:.4f}"
+    sy_str = f"{result[1]:.4f}"
+    sz_str = f"{result[2]:.4f}"
+else:
+    sx_str, sy_str, sz_str = "0.0000", "0.0108", "0.0116"
+
 
 # ── MuJoCo XMLスニペット出力 ──────────────────────────────
 
 print("\n" + "=" * 60)
 print("MuJoCo XML スニペット（参考）")
 print("=" * 60)
-if result:
-    sx_str = f"{result[0]:.4f}"
-    sy_str = f"{result[1]:.4f}"
-    sz_str = f"{result[2]:.4f}"
-else:
-    sx_str, sy_str, sz_str = "0.0000", "0.0069", "0.0116"
-
 print(f"""
-<!-- components/color_sensor_body.xml のスニペット -->
-<!-- 検出面3D重心から算出したsite位置（部品形状に忠実・再利用可能）
-     euler="-90 0 0": 検出面(body local +Y)を世界-Z(下向き)に回転 -->
-<body name="color_sensor" euler="-90 0 0">
+<!-- distance_sensor_body.xml に記述するスニペット -->
+<!-- センサーの向き:
+     STLはStudio標準向き（検出面がbody local +Y方向）
+     euler="0 0 0" で検出面が世界+Y（前方）を向く
+     distance_site pos Y = 検出面から5mm内側（自動計算値: {site_y_str}m） -->
+<body name="distance_sensor" euler="0 0 0">
   <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
-  <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
+  <geom name="distance_sensor_geom" type="mesh" mesh="distance_sensor_mesh"
         contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
-  <site name="color_site" pos="{sx_str} {sy_str} {sz_str}" size="0.005" rgba="1 1 0 1"/>
+  <!-- site位置は検出面3D重心から算出（部品形状に忠実・再利用可能） -->
+  <site name="distance_site" pos="{sx_str} {sy_str} {sz_str}" size="0.005" rgba="1 0 0 1"/>
 </body>
 """)
 

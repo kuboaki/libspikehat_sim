@@ -8,12 +8,14 @@
   </visual>
 
   <!--
-    距離センサーテスト用モデル
+    距離センサーテスト用モデル（LEGOメッシュ版）
 
     構成:
-      - distance_sensor_body: 距離センサー本体（固定）
-        - distance_site: センサーの検出点（前方を向く）
+      - sensor_mount: 距離センサー本体（固定）
+          components/distance_sensor_body.xml をinclude
+          distance_site: センサーの検出点（前方+Y を向く、ボディ内側5mm）
       - wall_body: 壁（スライダーで前後に移動）
+          obstacle_wall_a.stl を使用
 
     操作:
       - Controlスライダー "wall_slide_ctrl" で壁を前後に移動
@@ -25,18 +27,17 @@
       - Y軸: 前後（プラスが前方）
       - Z軸: 上下（プラスが上）
 
-    センサー位置: Y=0（原点）
-    壁の初期位置: Y=0.150（センサーから150mm前方）
-    壁の移動範囲: Y=0.030〜0.350（30mm〜350mm）
+    センサー位置: pos="0 0 0.044"（Studio testモデルのマウント高さ）
+    distance_site: Y=0.0108m（検出面から5mm内側）
+    壁の初期位置: Y=0.175（センサーから約150mm前方）
+    壁の移動範囲: Y=0.050〜0.400
 
-    距離の計測について:
-      レイキャストは distance_site（センサーデバイス面）から
-      障害物の表面までの距離を返す。
-      wall_y（壁bodyの中心Y座標）とセンサー計測値の差は：
-        センサーsiteのオフセット(15mm) + 壁の半厚(5mm) = 20mm
-      つまり wall_y=150mm のとき 距離=130mm となる。
-      実機のソナーセンサーも同様に「センサー面から障害物表面まで」
-      の距離を返すため、シムの動作は実機と整合している。
+    距離の計測:
+      レイキャストは distance_site（ボディ内側）から+Y方向に発射。
+      wall_body pos Y と計測距離の関係:
+        計測距離 ≈ wall_body_Y - 0.0243m
+          （0.0243 = site_Y(0.0108) + 壁の半厚(0.0271/2=0.0135)）
+      例: wall_body pos Y=0.175m → 計測距離 ≈ 0.1507m = 150.7mm
   -->
 
   <asset>
@@ -44,8 +45,12 @@
              width="512" height="512"
              rgb1="0.7 0.7 0.7" rgb2="0.8 0.8 0.8"/>
     <material name="grid_mat" texture="grid" texrepeat="4 4"/>
-    <material name="wall_mat" rgba="0.8 0.8 0.2 1"/>
-    <material name="sensor_mat" rgba="0.3 0.3 0.3 1"/>
+
+    <!-- 距離センサーメッシュ -->
+    <mesh name="distance_sensor_mesh" file="distance_sensor.stl"/>
+
+    <!-- 壁メッシュ -->
+    <mesh name="obstacle_wall_a_mesh" file="obstacle_wall_a.stl"/>
   </asset>
 
   <worldbody>
@@ -58,37 +63,33 @@
 
     <!-- ────────────────────────────────────────────────
          距離センサー本体（固定）
-         センサーの検出点は前方（Y+方向）を向く
+         sensor_mount の pos でセンサー搭載位置を指定
+         distance_sensor_body.xml: euler="0 0 0" で検出面が+Y（前方）
     ──────────────────────────────────────────────── -->
-    <body name="distance_sensor_body" pos="0 0 0.050">
-      <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
-
-      <!-- センサー本体（視覚化用） -->
-      <geom name="sensor_body_geom" type="box"
-            pos="0 0 0" size="0.020 0.015 0.015"
-            material="sensor_mat"
-            contype="0" conaffinity="0"/>
-
-      <!-- 検出点（前方Y+を向く）
-           site の向きは body の向きに依存するため
-           ここでは Y軸正方向が前方になるよう設定 -->
-      <site name="distance_site" pos="0 0.015 0"
-            size="0.005" rgba="1 0 0 1"/>
+    <!-- sensor_mount: 位置決め用ボディ。
+         MuJoCoの<include>はルート要素を除去して子要素を挿入するため、
+         inertial/geom/siteはdistance_sensor_body.xmlから提供される。
+         センサーの向きを変える場合はここのeulerで指定する（例: euler="0 0 90"）-->
+    <body name="sensor_mount" pos="0 0 0.0323">
+      <include file="components/distance_sensor_body.xml"/>
     </body>
 
     <!-- ────────────────────────────────────────────────
          壁（スライダーで前後に移動）
-         初期位置: センサーから150mm前方
+         obstacle_wall_a.stl: bottom_z centering（底面Z=0）
+         初期位置: センサーから約150mm前方
     ──────────────────────────────────────────────── -->
-    <body name="wall_body" pos="0 0.150 0">
-      <joint name="wall_slide" type="slide" axis="0 1 0"
-             range="-0.120 0.200" damping="10.0"/>
+    <!-- euler="0 0 180": LDraw→MuJoCoのX軸反転による向き反転を補正 -->
+    <!-- 初期距離: IOファイルから算出した117.3mm -->
+    <body name="wall_body" pos="0 0.1173 0" euler="0 0 180">
+      <!-- axis="0 -1 0": euler="0 0 180"でbody Y軸が反転するため逆向きに設定
+           正の値→壁が離れる（距離増加）、負の値→壁が近づく（距離減少）-->
+      <joint name="wall_slide" type="slide" axis="0 -1 0"
+             range="-0.225 0.125" damping="10.0"/>
       <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
 
-      <geom name="wall_geom" type="box"
-            pos="0 0 0.050" size="0.050 0.005 0.050"
-            material="wall_mat"
-            contype="1" conaffinity="1"/>
+      <geom name="wall_geom" type="mesh" mesh="obstacle_wall_a_mesh"
+            contype="1" conaffinity="1" rgba="0.8 0.8 0.2 0.8"/>
     </body>
 
   </worldbody>
@@ -96,7 +97,7 @@
   <!-- 壁スライダーアクチュエーター -->
   <actuator>
     <position name="wall_slide_ctrl" joint="wall_slide"
-              kp="100" ctrllimited="true" ctrlrange="-0.120 0.200"/>
+              kp="100" ctrllimited="true" ctrlrange="-0.225 0.125"/>
   </actuator>
 
   <!-- センサー -->
