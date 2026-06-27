@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-test_force_sensor_viewer.py — フォースセンサーテスト（力検出付き）
+test_force_sensor_viewer.py
 
-button と press_block が1つの剛体として動く。
-力の読み取り: spring_force = stiffness × joint_pos [N]
-  1mm → 1N (pressed 閾値)
- 10mm → 10N (最大)
+button + press_block = 1つの剛体（シャフト接合）。
+button_slide を直接制御。
+ctrl=0 でスプリングが自動復元。
 
 実行方法:
   cd libspikehat_sim
@@ -20,22 +19,30 @@ XML_PATH = os.path.join(os.path.dirname(__file__), "test_force_sensor.xml")
 model = mujoco.MjModel.from_xml_path(XML_PATH)
 data  = mujoco.MjData(model)
 
-button_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "button_slide")
+button_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT,    "button_slide")
+press_ctrl_id   = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, "press_ctrl")
 btn_qpos_adr    = model.jnt_qposadr[button_joint_id]
 
-STIFFNESS         = 1000.0  # N/m (1N/mm)
-PRESSED_ON_M      = 0.001   # 1.0mm: pressed 開始（仕様: 1 ± 0.5mm）
-PRESSED_OFF_M     = 0.0005  # 0.5mm: pressed 解除（ヒステリシス）
+STIFFNESS   = 1000.0
+PRESSED_ON  = 0.001
+PRESSED_OFF = 0.0005
 
-print(f"button_slide id={button_joint_id}")
-print("press_ctrl スライダーを動かしてください")
-print("  1mm(0.001) → pressed(≈1N)、15mm(0.015) → 完全埋没(15N)\n")
+print("press_ctrl スライダー: 目標位置 [m]")
+print("  ctrl=0     → 初期位置（スプリングで自動保持）")
+print("  ctrl=0.001 → [押下] 閾値(1mm, 1N)")
+print("  ctrl=0.010 → 最大(10mm, 10N)")
+print("  ctrl=0 に戻す → スプリング自動復元")
+print("  Space キー → ctrl=0 リセット\n")
+
+def key_callback(keycode):
+    if keycode == 32:
+        data.ctrl[press_ctrl_id] = 0.0
 
 prev_state = None
 
-with mujoco.viewer.launch_passive(model, data) as viewer:
-    model.stat.center[:] = [0.0, 0.0, 0.05]
-    model.stat.extent    = 0.10
+with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as viewer:
+    model.stat.center[:] = [0.0, 0.0, 0.06]
+    model.stat.extent    = 0.12
     viewer.cam.lookat[:] = model.stat.center
     viewer.cam.distance  = model.stat.extent * 3.0
     viewer.cam.azimuth   = 200.0
@@ -48,12 +55,11 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         btn_pos_m    = data.qpos[btn_qpos_adr]
         spring_force = STIFFNESS * btn_pos_m
 
-        # ヒステリシス: ON=1mm、OFF=0.5mm（実機仕様: しきい値 1 ± 0.5mm）
-        was_pressed  = prev_state[1] if prev_state else False
+        was_pressed = prev_state[1] if prev_state else False
         if was_pressed:
-            pressed = btn_pos_m > PRESSED_OFF_M
+            pressed = btn_pos_m > PRESSED_OFF
         else:
-            pressed = btn_pos_m > PRESSED_ON_M
+            pressed = btn_pos_m > PRESSED_ON
 
         state = (round(btn_pos_m * 10000), pressed)
         if state != prev_state:

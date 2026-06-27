@@ -8,12 +8,14 @@
   </visual>
 
   <!--
-    フォースセンサーテスト（button + press_block = 1ボディ版）
+    フォースセンサーテスト（センサー単体）
 
-    button と press_block はシャフトで接合された1つの剛体。
-    press_ctrl スライダーで button_slide を直接制御する。
-    ctrl=0 → 初期位置（突き出た状態）、スプリングで自動復元
-    ctrl=0.010 → 完全埋没
+    force_sensor_button を直接押したときに動作することを確認する。
+    press_block は不要。button_slide を直接制御する。
+
+    ctrl=0     → 初期位置（スプリングで保持）
+    ctrl=0.010 → button 最大押し込み（10mm, 10N）
+    ctrl=0 に戻す → 内蔵スプリングで自動復元
   -->
 
   <asset>
@@ -23,7 +25,6 @@
     <material name="grid_mat" texture="grid" texrepeat="4 4"/>
     <mesh name="force_sensor_body_mesh" file="force_sensor_body.stl"/>
     <mesh name="button_mesh"            file="button.stl"/>
-    <mesh name="press_block_mesh"       file="press_block.stl"/>
   </asset>
 
   <worldbody>
@@ -35,21 +36,22 @@
     <body name="sensor_mount" pos="0 0 0">
       <include file="components/force_sensor_body.xml"/>
     </body>
-
   </worldbody>
 
-  <!-- button_slide を直接位置制御（button + press_block が一緒に動く）
-       スプリング(stiffness=200)で ctrl=0 に戻したとき自動復元 -->
+  <!-- force_sensor_button を直接位置制御
+       ctrl=0     → 初期位置（スプリング保持）
+       ctrl=0.001 → 1mm([押下]閾値, 1N)
+       ctrl=0.010 → 10mm(最大, 10N)
+       ctrl=0 に戻す → スプリング自動復元 -->
   <actuator>
+    <!-- kp=10000, ratio=91%: ctrl=7.5mmで約6.8mm変位
+         目標: button top = 0.0479 - 0.0068 = 0.0411m (センサー上面+ふち1.6mmが見える) -->
     <position name="press_ctrl" joint="button_slide"
-              kp="1000" ctrllimited="true" ctrlrange="0 0.015"/>
+              kp="10000" ctrllimited="true" ctrlrange="0 0.0075"/>
   </actuator>
 
   <sensor>
     <jointpos name="button_pos" joint="button_slide"/>
-    <!-- force_touch: 外部から button/press_block に触れた力を検出
-         スプリング変位からも計算可能: force = 1000 × button_pos [N] -->
-    <touch name="force_touch" site="force_site"/>
   </sensor>
 
 </mujoco>
