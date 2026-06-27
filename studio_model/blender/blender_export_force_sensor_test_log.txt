@@ -1,0 +1,87 @@
+# blender_export_force_sensor_test_log
+
+============================================================
+シーン内オブジェクト一覧
+============================================================
+  [MESH ] 18674.dat                                          parent=press_block  verts=808
+  [MESH ] 3941.dat                                           parent=press_block  verts=1232
+  [MESH ] 4519.dat                                           parent=press_block  verts=90
+  [EMPTY] force_sensor_test.io                               parent=(root)
+  [MESH ] m71d95b20_2026625_051323.dat                       parent=force_sensor_test.io  verts=10304
+  [MESH ] m71d95b20_2026625_110744.dat                       parent=force_sensor_test.io  verts=1365
+  [EMPTY] press_block                                        parent=force_sensor_test.io
+
+press_block : OK
+センサー本体+ボタン メッシュ数: 2
+press_block メッシュ数: 3
+
+============================================================
+基準オフセット計算（センサー本体+ボタン+press_block の統合bbox）
+============================================================
+  全体bbox: X[80.1,139.9] Y[-160.5,-101.7] Z[-2.0,169.1] LDU
+  基準オフセット: (-110.00,131.07,2.00) LDU
+
+============================================================
+センサー本体・ボタン位置計算
+============================================================
+  センサー本体: ['m71d95b20_2026625_051323.dat']
+    bbox Z: [-2.0, 96.8] LDU
+    sensor_mount pos Z: 0.0000 m
+  ボタン: ['m71d95b20_2026625_110744.dat']
+    bbox Z: [97.0, 121.8] LDU
+    button_body pos Z: 0.0396 m
+    ボタン上面 Z: 0.0495 m
+    ストローク: 2.0 mm（仕様値）
+
+============================================================
+press_block 処理
+============================================================
+  MESHオブジェクト数: 3
+  bbox: X[91.1,130.9] Y[-151.4,-111.6] Z[101.0,169.1] LDU
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/press_block.stl
+  サイズ: W=0.0159m D=0.0159m H=0.0273m
+
+============================================================
+press_block 位置計算（MuJoCo座標）
+============================================================
+  press_block 底面 MuJoCo Z: 0.0412 m
+  ボタン上面  MuJoCo Z:      0.0495 m
+  初期ギャップ: -8.33 mm
+
+============================================================
+MuJoCo XML スニペット（参考）
+============================================================
+
+<!-- asset セクション -->
+<mesh name="force_sensor_body_mesh" file="meshes/force_sensor_body.stl"/>
+<mesh name="button_mesh"            file="meshes/button.stl"/>
+<mesh name="press_block_mesh"       file="meshes/press_block.stl"/>
+
+<!-- worldbody セクション -->
+
+<!-- フォースセンサー（button_bodyをinclud経由で取り込む） -->
+<body name="sensor_mount" pos="0 0 0.0000">
+  <include file="components/force_sensor_body.xml"/>
+</body>
+
+<!-- 押下ブロック（Z方向スライダー: 正の値で下降=ボタン押し込み） -->
+<body name="press_block" pos="-0.0004 0.0002 0.0412">
+  <joint name="press_slide" type="slide" axis="0 0 -1"
+         range="0 -0.0043" damping="5.0"/>
+  <inertial pos="0 0 0" mass="0.05" diaginertia="0.0005 0.0005 0.0005"/>
+  <geom name="press_geom" type="mesh" mesh="press_block_mesh"
+        contype="1" conaffinity="1" rgba="0.7 0.7 0.7 1"/>
+</body>
+
+<!-- アクチュエーター: ctrl=0→初期位置、ctrl正→下降（ボタン押し込み） -->
+<actuator>
+  <position name="press_ctrl" joint="press_slide"
+            kp="500" ctrllimited="true" ctrlrange="0 -0.0043"/>
+</actuator>
+
+<!-- 初期ギャップ: -8.33 mm（ボタン上面〜press_block底面）
+     ctrl ≈ -0.0083m でボタンに接触開始
+     ctrl ≈ -0.0063m でフルストローク（2mm押し込み） -->
+
+
+# ログ出力完了: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_force_sensor_test_log.txt

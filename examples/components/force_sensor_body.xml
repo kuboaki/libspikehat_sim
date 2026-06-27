@@ -1,0 +1,65 @@
+<!--
+  force_sensor_body.xml — SPIKE Prime フォースセンサー コンポーネント
+
+  構成:
+    1. force_sensor_body (固定): センサー本体
+    2. button body (可動、スプリング付き):
+         - button_geom (黄色): force_sensor_button パーツ
+         - press_block_geom (グレー): press_block パーツ（シャフトで button に接合）
+         → この2つは1つの剛体として button_slide joint で動く
+
+  LDR ファイルでの位置関係:
+    button    LDraw Y=-97.000  → body local MuJoCo Z=0.0396m (button STL 底面)
+    press_block LDraw Y=-100.875 → body local MuJoCo Z=0.04115m (press_block STL 底面)
+    差: 3.875 LDU = 1.55mm → press_block シャフトが button 内部に接合
+
+  使い方:
+    <body name="sensor_mount" pos="X Y Z">
+      <include file="components/force_sensor_body.xml"/>
+    </body>
+
+  button_slide joint:
+    - 外部から button または press_block に力を加えると -Z 方向に移動
+    - 力がなくなると stiffness で初期位置(joint_pos=0)に自動復元
+-->
+<body name="force_sensor_body" euler="0 0 0">
+  <inertial pos="0 0 0.020" mass="0.05" diaginertia="0.0005 0.0005 0.0005"/>
+
+  <geom name="force_sensor_geom" type="mesh" mesh="force_sensor_body_mesh"
+        contype="0" conaffinity="0" rgba="0.5 0.5 0.8 1"/>
+
+  <!-- force_site: センサー本体内部に固定（緑球がbody内部に見える）
+       Z=0.030: sensor_body内部（sensor_body top=0.0395より内側）
+       外部から press_block または button に力が加わったとき、
+       スプリング変位から force = stiffness × joint_pos で読み取る -->
+  <site name="force_site" pos="0 0 0.030" size="0.006" rgba="0 0.8 0 0.8"/>
+
+  <!-- button + press_block = 1つの剛体（シャフト接合）
+       button.stl と press_block.stl は別ファイルだが同じボディに属する -->
+  <body name="button" pos="0 0 0">
+    <!-- stiffness=1000: 1N/mm（仕様: 0~10N at 0~10mm）
+         pressed 閾値: joint_pos > 0.001m → spring_force ≈ 1N（仕様 0.5~1N）
+         重力(0.020kg×9.81=0.20N)による変位 = 0.2mm（無視できる） -->
+    <!-- range 0~0.015:
+         0.010m: ボタン上面がセンサー本体上面と面一
+         0.015m: ボタンが5mm埋没（完全に内部へ） -->
+    <joint name="button_slide" type="slide" axis="0 0 -1"
+           range="0 0.015"
+           springref="0"
+           stiffness="1000"
+           damping="10"/>
+    <inertial pos="0 0 0.055" mass="0.020" diaginertia="0.0001 0.0001 0.0001"/>
+
+    <!-- force_sensor_button (黄色)
+         STLはshared offsetで Z=[0.0396, 0.0495] に配置済み → pos="0 0 0" -->
+    <geom name="button_geom" type="mesh" mesh="button_mesh"
+          contype="1" conaffinity="1" rgba="0.8 0.8 0.2 1"/>
+
+    <!-- press_block (グレー): シャフトで button に接合
+         press_block STL 底面を button body local Z=0.04120 に配置
+         (press_block LDraw Y=-100.875 → (100.875+2.0)*0.0004 = 0.04115m) -->
+    <geom name="press_block_geom" type="mesh" mesh="press_block_mesh"
+          pos="0 0 0.04115"
+          contype="1" conaffinity="1" rgba="0.7 0.7 0.7 1"/>
+  </body>
+</body>
