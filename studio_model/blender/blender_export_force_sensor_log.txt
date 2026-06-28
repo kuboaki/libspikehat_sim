@@ -4,7 +4,7 @@
 シーン内オブジェクト一覧
 ============================================================
   [EMPTY] force_sensor.io                                    parent=(root)
-  [MESH ] m71d95b20_2026625_051323.dat                       parent=force_sensor.io  verts=10306
+  [MESH ] m71d95b20_2026625_051323.dat                       parent=force_sensor.io  verts=10304
   [MESH ] m71d95b20_2026625_110744.dat                       parent=force_sensor.io  verts=1365
 
 収集MESHオブジェクト数: 2
@@ -14,7 +14,7 @@
 ============================================================
 共有オフセット計算（全パーツ統合bbox）
 ============================================================
-  全体bbox: X[80.1,139.9] Y[-160.5,-101.7] Z[-2.0,121.8] LDU
+  全体bbox: X[80.1,139.9] Y[-160.5,-101.7] Z[-2.0,117.8] LDU
   共有オフセット: (-110.00,131.07,2.00) LDU
 
 ============================================================
@@ -22,26 +22,29 @@ force_sensor_body 処理
 ============================================================
   MESHオブジェクト数: 1
   bbox: X[80.1,139.9] Y[-160.5,-101.7] Z[-2.0,96.8] LDU
-  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/force_sensor_body.stl  (頂点:10306 面:9944)
+  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/force_sensor_body.stl  (頂点:10304 面:9944)
   サイズ: W=0.0239m D=0.0235m H=0.0395m
 
 ============================================================
 button 処理
 ============================================================
   MESHオブジェクト数: 1
-  bbox: X[93.1,128.9] Y[-140.9,-123.1] Z[97.0,121.8] LDU
+  bbox: X[93.1,128.9] Y[-140.9,-123.1] Z[93.0,117.8] LDU
   Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/button.stl  (頂点:1365 面:1228)
   サイズ: W=0.0143m D=0.0071m H=0.0099m
 
-  ボタン底面 MuJoCo: Z=0.0396 m  （= button_body pos Z）
+  ボタン底面 MuJoCo: Z=0.0380 m  （= button_body pos Z）
   センサー本体高さ: 0.0395 m
 
 ============================================================
-force_site 位置計算（ボタン上面3D重心）
+force_site 位置計算（ボタン上面3D重心 → button body local座標）
 ============================================================
-  ボタン上面頂点数: 350  重心(Blender): (1.00,-0.93,123.59) LDU
-  force_site body local MuJoCo: (-0.0004, 0.0004, 0.0494) m
-  force_site Z (内側5mm): 0.0444 m
+  ボタン上面頂点数: 350  重心(Blender): (1.00,-0.93,119.59) LDU
+  force_site body local MuJoCo: (-0.0004, 0.0004, 0.0478) m
+  force_site Z (内側5mm): 0.0428 m
+  force_site = sensor_mount local = button body local:
+    (-0.0004, 0.0004, 0.0428) m  ← XML に使う値
+  （button_body は pos=0,0,0 のため座標変換不要）
 
 ============================================================
 MuJoCo XML スニペット（参考）
@@ -64,7 +67,8 @@ MuJoCo XML スニペット（参考）
        range: 0（初期）〜 STROKE（最大押し込み）
        springref="0": スプリングがjoint_pos=0（初期位置）に復元
        stiffness: 10N / 0.002m = 5000 N/m -->
-  <body name="button" pos="-0.0004 0.0004 0.0396">
+  <!-- button_body: pos="0 0 0" → STL（共有オフセット済み）が正しい位置に表示される -->
+  <body name="button" pos="0 0 0">
     <joint name="button_slide" type="slide" axis="0 0 -1"
            range="0 0.002"
            springref="0"
@@ -74,7 +78,7 @@ MuJoCo XML スニペット（参考）
     <geom name="button_geom" type="mesh" mesh="button_mesh"
           contype="1" conaffinity="1" rgba="0.8 0.8 0.2 1"/>
     <!-- force_site: ボタン上面3D重心から算出（押し込み検出点） -->
-    <site name="force_site" pos="-0.0004 0.0004 0.0444" size="0.010" rgba="0 1 0 1"/>
+    <site name="force_site" pos="-0.0004 0.0004 0.0428" size="0.010" rgba="0 1 0 1"/>
   </body>
 </body>
 

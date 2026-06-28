@@ -8,14 +8,26 @@
   </visual>
 
   <!--
-    フォースセンサーテスト（センサー単体）
+    フォースセンサーテスト（press_block あり版）
 
-    force_sensor_button を直接押したときに動作することを確認する。
-    press_block は不要。button_slide を直接制御する。
+    設計:
+      センサーコンポーネント（body + button + 内蔵スプリング）は変更なし。
+      press_block はシャフトで button に接合 → equality 制約で 1:1 連動。
+      motor アクチュエーター（press_ctrl）で press_block に力を印加。
 
-    ctrl=0     → 初期位置（スプリングで保持）
-    ctrl=0.010 → button 最大押し込み（10mm, 10N）
-    ctrl=0 に戻す → 内蔵スプリングで自動復元
+    動作:
+      ctrl=0   → 力ゼロ → button 内蔵スプリングが press_block も含めて復元
+      ctrl>0   → press_block が下降 → button が一緒に押し込まれる
+      ctrl=10N → 最大（実機確認値）
+
+    equality 制約:
+      press_slide = button_slide （シャフト接合 = 1:1 連動）
+      → button の内蔵スプリングが press_block の復元力も担う
+
+    座標（sensor_mount local MuJoCo Z）:
+      button top(rest): 0.0479m
+      press_block 底面: 0.04115m（LDRから: press_block Y=-100.875 → シャフトがbutton内部に）
+      press_block top: 0.06839m
   -->
 
   <asset>
@@ -25,7 +37,16 @@
     <material name="grid_mat" texture="grid" texrepeat="4 4"/>
     <mesh name="force_sensor_body_mesh" file="force_sensor_body.stl"/>
     <mesh name="button_mesh"            file="button.stl"/>
+    <mesh name="press_block_mesh"       file="press_block.stl"/>
   </asset>
+
+  <!-- equality: press_slide が button_slide に追従（シャフト接合を表現）
+       motor は button_slide を直接駆動 → press_slide が受動的に追従
+       button の内蔵スプリングで両方が復元 -->
+  <equality>
+    <joint joint1="press_slide" joint2="button_slide"
+           polycoef="0 1 0 0 0"/>
+  </equality>
 
   <worldbody>
     <light name="light_top" pos="0 0 1.0" dir="0 0 -1"
@@ -33,25 +54,45 @@
     <geom name="floor" type="plane" size="0.5 0.5 0.01"
           material="grid_mat" contype="1" conaffinity="1"/>
 
+    <!-- センサーコンポーネント（press_block なしでも動作する） -->
     <body name="sensor_mount" pos="0 0 0">
       <include file="components/force_sensor_body.xml"/>
     </body>
+
+    <!-- press_block: シャフトで button に接合（equality で 1:1 連動）
+         初期位置: LDRから自動算出（blender_export_force_sensor_test.py）
+         press_block LDraw Y=-100.875 → MuJoCo Z=0.0411m
+         シャフト差し込み深さ = 6.77mm（ほぼボタン内いっぱい） -->
+    <!-- pos: blender_export_force_sensor_test.py が算出した LDR 原点位置
+         X=-0.0004, Y=0.0002: XY中心の微小ズレも補正 -->
+    <body name="press_block" pos="-0.0004 0.0002 0.0411">
+      <joint name="press_slide" type="slide" axis="0 0 -1"
+             range="0 0.0095"
+             damping="5"/>
+      <!-- 実機: スプリング(1190 N/m)がpress_block重力(0.196N)に十分打ち勝つ
+           変位 = 0.196/1190 ≈ 0.165mm → pressed OFF閾値(0.5mm)以下で問題なし -->
+      <inertial pos="0 0 0.014" mass="0.020" diaginertia="0.0001 0.0001 0.0001"/>
+      <!-- contype=0: シャフトがbutton内部に入るため衝突なし（視覚のみ）
+           外部からの力は equality 制約を通じて button_slide に伝わる -->
+      <geom name="press_geom" type="mesh" mesh="press_block_mesh"
+            contype="0" conaffinity="0" rgba="0.7 0.7 0.7 1"/>
+    </body>
+
   </worldbody>
 
-  <!-- force_sensor_button を直接位置制御
-       ctrl=0     → 初期位置（スプリング保持）
-       ctrl=0.001 → 1mm([押下]閾値, 1N)
-       ctrl=0.010 → 10mm(最大, 10N)
-       ctrl=0 に戻す → スプリング自動復元 -->
+  <!-- motor 型アクチュエーター（button_slide を直接駆動）
+       press_slide は equality で受動的に追従 → 完全連動が保証される
+       ctrl=0  → 力ゼロ → スプリングで button も press_block も自動復元
+       ctrl>0  → button と press_block が一緒に押し込まれる
+       ctrl=10N → 最大（実機確認値） -->
   <actuator>
-    <!-- kp=10000, ratio=91%: ctrl=9.3mmで約8.4mm変位
-         実機確認: 最大押し込み時 button top = sensor body top (0.0395m) -->
-    <position name="press_ctrl" joint="button_slide"
-              kp="10000" ctrllimited="true" ctrlrange="0 0.0093"/>
+    <motor name="press_ctrl" joint="button_slide"
+           gear="1" ctrllimited="true" ctrlrange="0 10"/>
   </actuator>
 
   <sensor>
-    <jointpos name="button_pos" joint="button_slide"/>
+    <jointpos name="button_pos"     joint="button_slide"/>
+    <jointpos name="press_position" joint="press_slide"/>
   </sensor>
 
 </mujoco>

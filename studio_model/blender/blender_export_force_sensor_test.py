@@ -87,14 +87,20 @@ def combined_bbox(meshes):
 
 # ── STL エクスポート ──────────────────────────────────────
 
-def export_stl(meshes, out_filename, center_mode="bottom_z"):
+def export_stl(meshes, out_filename, center_mode="bottom_z", shared_offset=None, rotor_axis_obj=None):
     if not meshes:
         print(f"  SKIP: メッシュなし → {out_filename}")
         return None
 
     (x0,x1),(y0,y1),(z0,z1) = combined_bbox(meshes)
     cx, cy = (x0+x1)/2, (y0+y1)/2
-    if center_mode == "bottom_z":
+    if shared_offset is not None:
+        dx, dy, dz = shared_offset
+    elif center_mode == "rotor_axis" and rotor_axis_obj is not None:
+        ax = rotor_axis_obj.matrix_world.translation
+        dx, dy, dz = -ax.x, -ax.y, -ax.z
+        print(f"  rotor_axis_obj: {rotor_axis_obj.name}  origin=({ax.x:.2f},{ax.y:.2f},{ax.z:.2f}) LDU")
+    elif center_mode == "bottom_z":
         dx, dy, dz = -cx, -cy, -z0
     else:
         dz = -(z0+z1)/2
@@ -233,7 +239,12 @@ print("="*60)
 
 press_bbox = None
 if press_meshes:
-    press_bbox = export_stl(press_meshes, "press_block.stl", center_mode="bottom_z")
+    # rotor_axis: press_block EMPTYの原点を基準にSTLを配置
+    # → STL local Z=0 = press_block LDraw原点（= シャフト底面）
+    # これにより MuJoCo での body pos Z が LDR と一致する
+    press_bbox = export_stl(press_meshes, "press_block.stl",
+                            center_mode="rotor_axis",
+                            rotor_axis_obj=press_root)
 
 print("\n" + "="*60)
 print("press_block 位置計算（MuJoCo座標）")
@@ -241,18 +252,22 @@ print("="*60)
 
 if press_bbox and press_root:
     (px0,px1),(py0,py1),(pz0,pz1) = press_bbox
-    # press_block のXY中心（MuJoCo）
+    # press_block XY中心（MuJoCo）
     pb_cx_bl = (px0+px1)/2 + ref_offset[0]
     pb_cy_bl = (py0+py1)/2 + ref_offset[1]
     pb_mx = -pb_cx_bl * SCALE
     pb_my = -pb_cy_bl * SCALE
-    # press_block 底面Z（MuJoCo）= ボタン上面より少し上
-    pb_bottom_z = (pz0 + ref_offset[2]) * SCALE
-
-    initial_gap = pb_bottom_z - button_top_z
-    print(f"  press_block 底面 MuJoCo Z: {pb_bottom_z:.4f} m")
+    # rotor_axis モード: STL local Z=0 = press_block LDraw原点（シャフト底面）
+    # → body pos Z = press_block EMPTY の world Blender Z を ref_offset で変換
+    ax = press_root.matrix_world.translation
+    pb_body_z = (ax.z + ref_offset[2]) * SCALE
+    print(f"  press_block EMPTY world Z: {ax.z:.3f} LDU")
+    print(f"  press_block body pos Z (MuJoCo): {pb_body_z:.4f} m ({pb_body_z*1000:.2f}mm)")
     print(f"  ボタン上面  MuJoCo Z:      {button_top_z:.4f} m")
-    print(f"  初期ギャップ: {initial_gap*1000:.2f} mm")
+    shaft_depth = button_top_z - pb_body_z
+    print(f"  シャフトがbuttonに差し込まれた深さ: {shaft_depth*1000:.2f}mm")
+    pb_bottom_z = pb_body_z  # 旧変数名との互換性
+    initial_gap = 0.0  # rotor_axisモードでは press_block がbutton内に差し込まれた状態が初期位置
 
     # press_block のスライダー範囲
     # ctrl=0: press_block は初期位置（ボタン非接触）

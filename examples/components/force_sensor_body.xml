@@ -4,29 +4,24 @@
   構成:
     1. force_sensor_body (固定): センサー本体ハウジング
     2. button body (可動): 黄色いボタン
-       - button_slide joint + 内蔵スプリング(stiffness=1000)
+       - button_slide joint + 内蔵スプリング(stiffness=1190)
        - 外力なし → スプリングで初期位置に自動復元（パーツ固有の特性）
     3. force_site: body内部の検出点
 
   press_block はコンポーネントに含まない。
-  シャフト接合は利用側の equality 制約で表現する:
-    <equality>
-      <joint joint1="button_slide" joint2="press_slide" polycoef="0 1 0 0 0"/>
-    </equality>
+  シャフト接合は利用側の equality 制約で表現する。
 
-  使い方（press_blockあり）:
-    1. sensor_mount に force_sensor_body.xml を include
-    2. press_block body + press_slide joint を追加
-    3. equality で button_slide = press_slide を定義
-    4. press_slide にアクチュエーター
+  button body pos="0 0 0":
+    force_sensor.io から再エクスポートした button.stl は
+    shared_offset 適用済みで sensor_mount local Z=[0.0380, 0.0479] に配置される。
+    → body pos="0 0 0" で正しい位置に表示される（LDR と一致）
 
-  使い方（荷物シナリオ、press_blockなし）:
-    1. sensor_mount に force_sensor_body.xml を include するだけ
-    2. 荷物 body が button_geom に接触 → button_slide 圧縮
-    3. 荷物がなくなる → スプリングで自動復元
+  force_site pos: blender_export_force_sensor.py が検出面3D重心から算出
+    (-0.0004, 0.0004, 0.0428) m
 
   button_slide joint:
-    stiffness=1000: 内蔵スプリング（1N/mm、仕様最大10N at 10mm）
+    stiffness=1190: 実機確認（10N at 8.4mm → 10/0.0084=1190 N/m）
+    range 0~0.0095: 実機確認（最大押し込みで button top = sensor body top）
 -->
 <body name="force_sensor_body" euler="0 0 0">
   <inertial pos="0 0 0.020" mass="0.05" diaginertia="0.0005 0.0005 0.0005"/>
@@ -34,17 +29,20 @@
   <geom name="force_sensor_geom" type="mesh" mesh="force_sensor_body_mesh"
         contype="0" conaffinity="0" rgba="0.5 0.5 0.8 1"/>
 
-  <site name="force_site" pos="0 0 0.030" size="0.006" rgba="0 0.8 0 0.8"/>
+  <!-- force_site: センサー本体内部に固定（視覚的にbody内部に見える）
+       Z=0.030m: sensor body 内部（top=0.0395より下）
+       力の読み取りはスプリング変位から計算するため位置は視覚目的 -->
+  <site name="force_site" pos="0 0 0.030" size="0.003" rgba="0 0.8 0 0.8"/>
 
-  <!-- LDRから算出: ボタン原点とボタン形状底面の差 = 4 LDU = 1.6mm -->
-  <body name="button" pos="0 0 -0.0016">
-    <!-- range: 実機確認 → 最大押し込みで button top = sensor body top
-         初期 button top(0.0479) - 0.0084 = 0.0395 = sensor body top -->
-    <!-- stiffness=1190: 実機確認 10N at 8.4mm → 10/0.0084=1190 N/m -->
+  <!-- button body pos="0 0 0":
+       force_sensor.io を再エクスポートした button.stl はshared_offset済み
+       → Z=[0.0380, 0.0479] が正しい sensor_mount local 位置（LDR一致） -->
+  <body name="button" pos="0 0 0">
+    <!-- stiffness=1253: 実機再校正（slider=9.5N が実機10N相当 → 1190×10/9.5） -->
     <joint name="button_slide" type="slide" axis="0 0 -1"
            range="0 0.0095"
            springref="0"
-           stiffness="1190"
+           stiffness="1253"
            damping="10"/>
     <inertial pos="0 0 0.0445" mass="0.010" diaginertia="0.00001 0.00001 0.00001"/>
     <geom name="button_geom" type="mesh" mesh="button_mesh"
