@@ -40,10 +40,11 @@
   <body name="button" pos="0 0 -0.0016">
     <!-- range: 実機確認 → 最大押し込みで button top = sensor body top
          初期 button top(0.0479) - 0.0084 = 0.0395 = sensor body top -->
+    <!-- stiffness=1190: 実機確認 10N at 8.4mm → 10/0.0084=1190 N/m -->
     <joint name="button_slide" type="slide" axis="0 0 -1"
            range="0 0.0095"
            springref="0"
-           stiffness="1000"
+           stiffness="1190"
            damping="10"/>
     <inertial pos="0 0 0.0445" mass="0.010" diaginertia="0.00001 0.00001 0.00001"/>
     <geom name="button_geom" type="mesh" mesh="button_mesh"

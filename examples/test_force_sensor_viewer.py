@@ -23,7 +23,7 @@ button_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT,    "button
 press_ctrl_id   = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, "press_ctrl")
 btn_qpos_adr    = model.jnt_qposadr[button_joint_id]
 
-STIFFNESS   = 1000.0
+STIFFNESS   = 1190.0  # 実機確認: 10N at 8.4mm → 10/0.0084=1190 N/m
 PRESSED_ON  = 0.001
 PRESSED_OFF = 0.0005
 
