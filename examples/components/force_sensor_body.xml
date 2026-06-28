@@ -38,8 +38,10 @@
 
   <!-- LDRから算出: ボタン原点とボタン形状底面の差 = 4 LDU = 1.6mm -->
   <body name="button" pos="0 0 -0.0016">
+    <!-- range: 実機確認 → 最大押し込みで button top = sensor body top
+         初期 button top(0.0479) - 0.0084 = 0.0395 = sensor body top -->
     <joint name="button_slide" type="slide" axis="0 0 -1"
-           range="0 0.008"
+           range="0 0.0095"
            springref="0"
            stiffness="1000"
            damping="10"/>

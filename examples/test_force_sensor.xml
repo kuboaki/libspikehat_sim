@@ -44,10 +44,10 @@
        ctrl=0.010 → 10mm(最大, 10N)
        ctrl=0 に戻す → スプリング自動復元 -->
   <actuator>
-    <!-- kp=10000, ratio=91%: ctrl=7.5mmで約6.8mm変位
-         目標: button top = 0.0479 - 0.0068 = 0.0411m (センサー上面+ふち1.6mmが見える) -->
+    <!-- kp=10000, ratio=91%: ctrl=9.3mmで約8.4mm変位
+         実機確認: 最大押し込み時 button top = sensor body top (0.0395m) -->
     <position name="press_ctrl" joint="button_slide"
-              kp="10000" ctrllimited="true" ctrlrange="0 0.0075"/>
+              kp="10000" ctrllimited="true" ctrlrange="0 0.0093"/>
   </actuator>
 
   <sensor>
