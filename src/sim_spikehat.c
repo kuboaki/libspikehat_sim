@@ -81,8 +81,10 @@ typedef struct sim_spikehat {
     int      ctrl_id;        /* actuator の ctrl インデックス */
     int      color_site_id;    /* カラーセンサーsite（-1=未検出） */
     int      distance_site_id; /* 距離センサーsite（-1=未検出） */
-    int      force_site_id;    /* フォースセンサーsite（-1=未検出） */
-    int      force_sensor_id;  /* touchセンサーのID（-1=未検出） */
+    int      force_site_id;      /* フォースセンサーsite（-1=未検出） */
+    int      force_sensor_id;    /* touchセンサーのID（-1=未検出） */
+    int      button_slide_qpadr; /* button_slide joint の qpos アドレス（-1=未検出） */
+    double   button_stiffness;   /* button_slide のスプリング定数 [N/m]（0=未検出） */
 } sim_spikehat_t;
 
 
@@ -241,6 +243,16 @@ spikehat_t *spikehat_open(const char *device) {
     sim->force_sensor_id = mj_name2id(sim->model, mjOBJ_SENSOR, "force_touch");
     fprintf(stderr, "[sim] force_site id=%d  force_touch id=%d\n",
             sim->force_site_id, sim->force_sensor_id);
+    /* button_slide ジョイントを検索（コンポーネント方式フォールバック）*/
+    sim->button_slide_qpadr = -1;
+    sim->button_stiffness   = 0.0;
+    int bsid = mj_name2id(sim->model, mjOBJ_JOINT, "button_slide");
+    if (bsid >= 0) {
+        sim->button_slide_qpadr = sim->model->jnt_qposadr[bsid];
+        sim->button_stiffness   = sim->model->jnt_stiffness[bsid];
+        fprintf(stderr, "[sim] button_slide qpadr=%d stiffness=%.1f\n",
+                sim->button_slide_qpadr, sim->button_stiffness);
+    }
 
     fprintf(stderr, "[sim] spikehat_open: %s (timestep=%.4f, speed_scale=%.1f)\n",
             xml_path, sim->model->opt.timestep, sim->speed_scale);
@@ -528,14 +540,35 @@ int spikehat_force_read(spikehat_t *hat, int port,
                         int *force, int *pressed) {
     if (!hat || !force || !pressed) return -1;
     sim_spikehat_t *sim = (sim_spikehat_t *)hat;
-    if (sim->force_sensor_id < 0) { *force = 0; *pressed = 0; return 0; }
 
-    /* touch センサーの値を取得（接触力 [N]） */
-    int adr = sim->model->sensor_adr[sim->force_sensor_id];
-    double f = sim->data->sensordata[adr];
+    double f = 0.0;
+
+    if (sim->force_sensor_id >= 0) {
+        /* touch センサーから接触力 [N] を取得（旧方式）*/
+        int adr = sim->model->sensor_adr[sim->force_sensor_id];
+        f = sim->data->sensordata[adr];
+    }
+
+    /* button_slide スプリング力で補完（コンポーネント方式）
+     * press_block + button の重力 ≈ (0.020+0.010)*9.81 ≈ 0.29N で常にスプリングが圧縮される。
+     * 重力による静的変位を除いた実効力 f_eff = k*(q - q_static) を「押下力」とする。
+     * q_static = (m_button + m_press) * g / k ≈ 0.000235 m（シミュレーション実測値）。
+     * 実効閾値 1.0N ≈ 変位 0.80mm → 意図的な押下のみ検出。 */
+    if (sim->button_slide_qpadr >= 0 && sim->button_stiffness > 0.0) {
+        double disp = sim->data->qpos[sim->button_slide_qpadr];
+        double f_spring = sim->button_stiffness * disp;
+        /* f_spring が touch sensor 値より大きければ上書き */
+        if (f_spring > f) f = f_spring;
+    }
+
+    if (sim->force_sensor_id < 0 && sim->button_slide_qpadr < 0) {
+        *force = 0; *pressed = 0; return 0;
+    }
 
     *force   = (int)round(f);
-    *pressed = (f > 0.1) ? 1 : 0;  /* 0.1N以上で押下判定（実機に合わせる） */
+    /* 押下判定閾値: 0.5N
+     * 静的圧縮 ≈ 0.29N + 余裕 0.21N → 軽いタッチ（ctrl ≈ 0.2N以上）で検出 */
+    *pressed = (f > 0.5) ? 1 : 0;
     return 0;
 }
 
