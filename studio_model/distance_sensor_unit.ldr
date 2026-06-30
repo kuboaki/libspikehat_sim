@@ -1,0 +1,10 @@
+0 FILE distance_sensor_unit.io
+0 distance_sensor_unit
+0 Name: distance_sensor_unit
+0 Author:
+0 CustomBrick
+0 FlexibleBrickControlPointUnitLength -1
+0 FlexibleBrickLockedControlPoint
+0 NumOfBricks 1
+1 0 0.000000 -28.900000 29.400000 1.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 1.000000 37316c01.dat
+0 NOFILE

@@ -4,66 +4,35 @@
 ============================================================
 シーン内オブジェクト一覧
 ============================================================
-  [MESH ] 18651.dat                                parent=obstacle_wall_a  verts=567
-  [MESH ] 18651.dat.001                            parent=obstacle_wall_a  verts=567
-  [MESH ] 2780.dat                                 parent=ground_plate  verts=1292
-  [MESH ] 2780.dat.001                             parent=ground_plate  verts=1292
-  [MESH ] 2780.dat.002                             parent=ground_plate  verts=1292
-  [MESH ] 2780.dat.003                             parent=ground_plate  verts=1292
-  [MESH ] 3036.dat                                 parent=obstacle_wall_a  verts=2928
-  [MESH ] 32525.dat                                parent=ground_plate  verts=2364
-  [MESH ] 32525.dat.001                            parent=ground_plate  verts=2364
-  [MESH ] 37316c01.dat                             parent=distance_sensor_test.io  verts=7441
-  [MESH ] 3738.dat                                 parent=obstacle_wall_a  verts=1064
-  [MESH ] 39369.dat                                parent=ground_plate  verts=80104
-  [MESH ] 39790.dat                                parent=ground_plate  verts=11024
-  [MESH ] 41239.dat                                parent=ground_plate  verts=2804
-  [MESH ] 41239.dat.001                            parent=ground_plate  verts=2804
-  [MESH ] 48989.dat                                parent=obstacle_wall_a  verts=1884
-  [MESH ] 55615.dat                                parent=ground_plate  verts=2288
-  [MESH ] 55615.dat.001                            parent=ground_plate  verts=2288
-  [MESH ] 6558.dat                                 parent=ground_plate  verts=1764
-  [MESH ] 6558.dat.001                             parent=ground_plate  verts=1764
-  [MESH ] 6558.dat.002                             parent=ground_plate  verts=1764
-  [MESH ] 6558.dat.003                             parent=ground_plate  verts=1764
-  [EMPTY] distance_sensor_test.io                  parent=(root)
-  [EMPTY] ground_plate                             parent=distance_sensor_test.io
-  [EMPTY] obstacle_wall_a                          parent=distance_sensor_test.io
+  [MESH ] 37316c01.dat                             parent=distance_sensor  verts=7445
+  [EMPTY] distance_sensor                          parent=(root)
 
 サブモデル検索結果:
-  ground_plate    : OK
-  obstacle_wall_a : OK
+  ground_plate    : NOT FOUND
+  obstacle_wall_a : NOT FOUND
   37316c01.dat    : OK
 
 ============================================================
 基準オフセット計算（ground_plate の Z底面を0とする）
 ============================================================
-  ground_plate bbox: X[-259.9,-40.1] Y[-198.9,580.9] Z[-24.2,95.4]
-  基準オフセット: (150.00, -191.00, 24.21) LDU
+  WARNING: ground_plate が見つかりません、オフセット=(0,0,0)
 
 ============================================================
 obstacle_wall_a 処理
 ============================================================
-  MESHオブジェクト数: 5
-  統合bbox: X[-229.9,-70.1] Y[352.2,419.9] Z[-20.7,170.1] LDU
-  オフセット: (150.00, -386.04, 20.65) LDU
-  Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/obstacle_wall_a.stl
-  頂点数: 7010  三角面数: 6456
-  サイズ: W=0.0639m  D=0.0271m  H=0.0763m
+  NOT FOUND
 
 ============================================================
 センサー位置計算（メッシュbbox底面をsensor_mount pos Zとする）
 ============================================================
-  センサー bbox: X[-219.9,-80.1] Y[62.9,141.7] Z[56.5,114.3] LDU
-  センサー底面 MuJoCo Z: 0.0323 m  （= sensor_mount pos Z）
+  センサー bbox: X[-108.9,30.9] Y[-40.8,38.0] Z[0.1,57.9] LDU
+  センサー底面 MuJoCo Z: 0.0000 m  （= sensor_mount pos Z）
   センサー高さ: 23.1 mm  → site Z body local: 0.0116 m
 
 ============================================================
 壁の初期位置計算（センサー→壁の相対距離をIOファイルから算出）
 ============================================================
-  センサー Blender Y: 72.88 LDU
-  壁     Blender Y: 366.02 LDU
-  IOファイルでのセンサー→壁 距離: 117.3 mm
+  WARNING: 壁またはセンサーが未検出、デフォルト値を使用
 
 ============================================================
 MuJoCo XML スニペット（参考）
@@ -77,13 +46,13 @@ MuJoCo XML スニペット（参考）
 
 <!-- 距離センサー: sensor_mount pos Z = IOファイルから算出したセンサー底面高さ -->
 <!-- site Z body local: 0.0116 m (センサー高さ中心) -->
-<body name="sensor_mount" pos="0 0 0.0323">
+<body name="sensor_mount" pos="0 0 0.0000">
   <include file="components/distance_sensor_body.xml"/>
 </body>
 
-<!-- 壁: IOファイルでのセンサー→壁距離(117.3mm)を前方(+Y)に配置 -->
+<!-- 壁: IOファイルでのセンサー→壁距離(175.0mm)を前方(+Y)に配置 -->
 <!-- euler="0 0 180": LDraw→MuJoCo X軸反転による向き反転を補正 -->
-<body name="wall_body" pos="0 0.1173 0" euler="0 0 180">
+<body name="wall_body" pos="0 0.1750 0" euler="0 0 180">
   <joint name="wall_slide" type="slide" axis="0 1 0"
          range="-0.125 0.225" damping="10.0"/>
   <inertial pos="0 0 0" mass="0.1" diaginertia="0.001 0.001 0.001"/>
