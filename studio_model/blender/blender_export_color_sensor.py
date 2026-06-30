@@ -4,13 +4,22 @@ Blender用スクリプト: color_sensor.io → color_sensor.stl
 対応モデル: color_sensor.io
   Blenderシーン上のオブジェクト:
     （ルートEMPTY）
-      └── 37308c01.dat 系MESHオブジェクト群
+      └── 37308.dat 系MESHオブジェクト群
 
-座標系:
-  LDraw座標系（Y下向き）から MuJoCo座標系（Z上向き）に変換する。
-    mj_x = -ldu_x * SCALE
-    mj_y = -ldu_y * SCALE
-    mj_z =  ldu_z * SCALE
+座標変換:
+  mj_x = -blender_x * SCALE
+  mj_y = -blender_y * SCALE
+  mj_z =  blender_z * SCALE
+
+センサー検出面:
+  LDraw -Z（パーツ前面）→ Blender -Y → MuJoCo +Y
+  bottom_z モードでの body local 検出面方向 = +Y
+  → euler="-90 0 0" で検出面が世界-Z（下向き）を向く
+
+注意:
+  37308.dat は Studio の床スナップにより Z=19.5 LDU が自動付与される。
+  center_mode="bottom_z" を使うことでこのオフセットを吸収し、
+  STL の Z 底面を常に 0 に揃える。
 
 出力:
   color_sensor.stl … センサー外形（XY中心・Z底面=0）
@@ -83,13 +92,9 @@ def combined_bbox(meshes):
 # ── STL エクスポート ──────────────────────────────────────
 
 def export_stl(meshes, out_filename, center_mode="bottom_z"):
-    """
-    center_mode: 'bottom_z' = XY中心 + Z底面を0
-                 'center'   = XYZ中心を0
-    """
     if not meshes:
         print("  ERROR: メッシュリストが空です")
-        return
+        return None
 
     print(f"  MESHオブジェクト数: {len(meshes)}")
 
@@ -100,9 +105,11 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
 
     if center_mode == "bottom_z":
         dx, dy, dz = -cx, -cy, -z0
+    elif center_mode == "pivot_origin":
+        dx, dy, dz = 0.0, 0.0, 0.0
     else:
         dx, dy, dz = -cx, -cy, -cz
-    print(f"  オフセット: ({dx:.2f}, {dy:.2f}, {dz:.2f}) LDU")
+    print(f"  center_mode={center_mode}  オフセット: ({dx:.2f}, {dy:.2f}, {dz:.2f}) LDU")
 
     all_verts = []
     triangles = []
@@ -144,14 +151,12 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
     h = (z1 - z0) * SCALE
     print(f"  MuJoCo上のサイズ(参考): W={w:.4f}m  D={d:.4f}m  H={h:.4f}m")
 
-    # ── 検出面の3D重心からsite位置を計算 ──────────────────
-    # 検出面 = Blender Y_min 付近の頂点群（LDraw -Z = センサー前面）
-    # 重心の X, Y, Z をそのままbody local MuJoCo座標に変換する
-    # → 部品形状に忠実で、どんなモデルでも再利用できる
-    FACE_TOL  = 2.0   # 検出面とみなすY方向の許容幅[LDU]
-    SITE_RADIUS = 0.005  # siteをボディ内側に5mm引き込む
+    # 検出面(レンズ面)はY_min側・Y_max側の頂点数を比較し多い方を採用
+    FACE_TOL    = 2.0
+    SITE_RADIUS = 0.005
 
-    face_verts = []
+    face_verts_min = []
+    face_verts_max = []
     for obj in meshes:
         eval_obj2 = obj.evaluated_get(depsgraph)
         mesh2     = eval_obj2.to_mesh()
@@ -159,17 +164,23 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
         for v in mesh2.vertices:
             wv = mat2 @ v.co
             if wv.y <= y0 + FACE_TOL:
-                face_verts.append((wv.x + dx, wv.y + dy, wv.z + dz))
+                face_verts_min.append((wv.x + dx, wv.y + dy, wv.z + dz))
+            if wv.y >= y1 - FACE_TOL:
+                face_verts_max.append((wv.x + dx, wv.y + dy, wv.z + dz))
         eval_obj2.to_mesh_clear()
+
+    print(f"  Y_min側頂点数: {len(face_verts_min)}  Y_max側頂点数: {len(face_verts_max)}")
+    face_verts = face_verts_max if len(face_verts_max) > len(face_verts_min) else face_verts_min
+    print(f"  → 検出面として{'Y_max側' if face_verts is face_verts_max else 'Y_min側'}を採用")
 
     if face_verts:
         fc_x = sum(v[0] for v in face_verts) / len(face_verts)
         fc_y = sum(v[1] for v in face_verts) / len(face_verts)
         fc_z = sum(v[2] for v in face_verts) / len(face_verts)
-        site_x     = -fc_x * SCALE
+        site_x      = -fc_x * SCALE
         site_y_face = -fc_y * SCALE
-        site_z     =  fc_z * SCALE
-        site_y     = site_y_face - SITE_RADIUS
+        site_z      =  fc_z * SCALE
+        site_y      = site_y_face - SITE_RADIUS
         print(f"  検出面頂点数: {len(face_verts)}  重心(Blender): ({fc_x:.2f}, {fc_y:.2f}, {fc_z:.2f}) LDU")
         print(f"  site body local MuJoCo: X={site_x:.4f} Y_face={site_y_face:.4f} Z={site_z:.4f} m")
         print(f"  site Y (内側{SITE_RADIUS*1000:.0f}mm): {site_y:.4f} m")
@@ -229,13 +240,16 @@ else:
     sx_str, sy_str, sz_str = "0.0000", "0.0069", "0.0116"
 
 print(f"""
-<!-- components/color_sensor_body.xml のスニペット -->
-<!-- 検出面3D重心から算出したsite位置（部品形状に忠実・再利用可能）
-     euler="-90 0 0": 検出面(body local +Y)を世界-Z(下向き)に回転 -->
+<!-- color_sensor_body.xml に記述するスニペット -->
+<!-- センサーの向き:
+     STLはbottom_z方式（XY中心・Z底面=0）
+     euler="-90 0 0" で検出面(body local +Y)が世界-Z(下向き)を向く
+     color_site pos Y = 検出面から5mm内側（自動計算値: {sy_str}m） -->
 <body name="color_sensor" euler="-90 0 0">
   <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
   <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
         contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
+  <!-- site位置は検出面3D重心から算出（部品形状に忠実・再利用可能） -->
   <site name="color_site" pos="{sx_str} {sy_str} {sz_str}" size="0.005" rgba="1 1 0 1"/>
 </body>
 """)

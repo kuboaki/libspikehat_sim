@@ -1,0 +1,133 @@
+# blender_export_color_blocks_with_sensor_log
+# LOG_PATH: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_blocks_with_sensor_log.txt
+
+============================================================
+シーン内オブジェクト一覧
+============================================================
+  [MESH ] 18651.dat                                          parent=test_harness  verts=567
+  [MESH ] 18651.dat.001                                      parent=test_harness  verts=567
+  [MESH ] 18651.dat.002                                      parent=test_harness  verts=567
+  [MESH ] 18651.dat.003                                      parent=test_harness  verts=567
+  [MESH ] 23948.dat                                          parent=test_harness  verts=90
+  [MESH ] 23948.dat.001                                      parent=test_harness  verts=90
+  [MESH ] 23948.dat.002                                      parent=test_harness  verts=90
+  [MESH ] 23948.dat.003                                      parent=test_harness  verts=90
+  [MESH ] 3022.dat                                           parent=tile_black  verts=196
+  [MESH ] 3022.dat.001                                       parent=tile_blue  verts=196
+  [MESH ] 3022.dat.002                                       parent=tile_green  verts=196
+  [MESH ] 3022.dat.003                                       parent=tile_yellow  verts=196
+  [MESH ] 3022.dat.004                                       parent=tile_red  verts=196
+  [MESH ] 3022.dat.005                                       parent=tile_white  verts=196
+  [MESH ] 3022.dat.006                                       parent=tile_brown  verts=196
+  [MESH ] 3068b.dat                                          parent=tile_black  verts=145
+  [MESH ] 3068b.dat.001                                      parent=tile_blue  verts=145
+  [MESH ] 3068b.dat.002                                      parent=tile_green  verts=145
+  [MESH ] 3068b.dat.003                                      parent=tile_yellow  verts=145
+  [MESH ] 3068b.dat.004                                      parent=tile_red  verts=145
+  [MESH ] 3068b.dat.005                                      parent=tile_white  verts=145
+  [MESH ] 3068b.dat.006                                      parent=tile_brown  verts=145
+  [MESH ] 3069a.dat                                          parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.001                                      parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.002                                      parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.003                                      parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.004                                      parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.005                                      parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.006                                      parent=gap_cover  verts=48
+  [MESH ] 3069a.dat.007                                      parent=gap_cover  verts=48
+  [MESH ] 32073.dat                                          parent=test_harness  verts=90
+  [MESH ] 32073.dat.001                                      parent=test_harness  verts=90
+  [MESH ] 3456.dat                                           parent=test_harness  verts=5268
+  [MESH ] 3456.dat.001                                       parent=test_harness  verts=5268
+  [MESH ] 3713.dat                                           parent=test_harness  verts=430
+  [MESH ] 3713.dat.001                                       parent=test_harness  verts=430
+  [MESH ] 3713.dat.002                                       parent=test_harness  verts=430
+  [MESH ] 3713.dat.003                                       parent=test_harness  verts=430
+  [MESH ] 37308c01.dat                                       parent=color_blocks_with_color_sensor.io  verts=2358
+  [MESH ] 3795.dat                                           parent=base_plate  verts=588
+  [MESH ] 3795.dat.001                                       parent=base_plate  verts=588
+  [MESH ] 3795.dat.002                                       parent=base_plate  verts=588
+  [MESH ] 3795.dat.003                                       parent=base_plate  verts=588
+  [MESH ] 39789.dat                                          parent=test_harness  verts=860
+  [MESH ] 39789.dat.001                                      parent=test_harness  verts=860
+  [MESH ] 39789.dat.002                                      parent=test_harness  verts=860
+  [MESH ] 39789.dat.003                                      parent=test_harness  verts=860
+  [MESH ] 39789.dat.004                                      parent=test_harness  verts=860
+  [MESH ] 39789.dat.005                                      parent=test_harness  verts=860
+  [MESH ] 39793.dat                                          parent=test_harness  verts=1848
+  [MESH ] 39793.dat.001                                      parent=test_harness  verts=1848
+  [MESH ] 48989.dat                                          parent=color_blocks_with_color_sensor.io  verts=1884
+  [EMPTY] base_plate                                         parent=color_blocks_with_color_sensor.io
+  [EMPTY] color_blocks_with_color_sensor.io                  parent=(root)
+  [EMPTY] gap_cover                                          parent=color_blocks_with_color_sensor.io
+  [EMPTY] test_harness                                       parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_black                                         parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_blue                                          parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_brown                                         parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_green                                         parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_red                                           parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_white                                         parent=color_blocks_with_color_sensor.io
+  [EMPTY] tile_yellow                                        parent=color_blocks_with_color_sensor.io
+
+============================================================
+カラーブロック shared_offset 計算
+============================================================
+  base_plate  : 4 meshes
+  gap_cover   : 8 meshes
+  tile_black  : 2 meshes
+  tile_blue   : 2 meshes
+  tile_green  : 2 meshes
+  tile_yellow : 2 meshes
+  tile_red    : 2 meshes
+  tile_white  : 2 meshes
+  tile_brown  : 2 meshes
+
+  全ブロック統合bbox:
+    X[-119.90, 359.90]  Y[-199.90, -160.10]  Z[-7.87, 16.00] Blender
+  shared_offset: (-120.000, 180.000, 7.867) Blender LDU相当
+
+============================================================
+センサー（37308.dat）位置・回転取得
+============================================================
+  センサーオブジェクト: 37308c01.dat  parent=color_blocks_with_color_sensor.io
+  Blender world 位置: (19.1406, -180.5000, 93.5000)
+  shared_offset 適用後: (-100.8594, -0.5000, 101.3667)
+  MuJoCo pos: (0.0403, 0.0002, 0.0405) m
+
+============================================================
+センサー回転 → MuJoCo euler
+============================================================
+  Blender 回転行列:
+    [-0.0000  1.0000 -0.0000]
+    [-1.0000 -0.0000  0.0000]
+    [ 0.0000  0.0000  1.0000]
+  MuJoCo 回転行列:
+    [-0.0000  1.0000  0.0000]
+    [-1.0000 -0.0000 -0.0000]
+    [-0.0000 -0.0000  1.0000]
+  MuJoCo euler (XYZ度): (-0.00, 0.00, -90.00)
+
+============================================================
+センサーSTLのbbox（body pos Y補正の参考）
+============================================================
+  color_sensor.stl は bottom_z 方式（XY中心・Z底面=0）
+  → STL の Z範囲中心（half_H）が euler後に world Y 方向にズレる
+  → body pos Y = -half_H で補正（センサーをY方向に中央揃え）
+  STL高さ: 0.0231m  half_H: 0.0115m
+  → body pos の Y を -0.0115m 補正することを検討
+
+============================================================
+MuJoCo XML スニペット（test_color_sensor.xml 参考）
+============================================================
+
+<!-- カラーセンサー body（スライダー付き） -->
+<!-- pos: color_blocks_with_color_sensor.io のセンサー位置をブロック原点基準に変換 -->
+<!-- euler: Studioで配置した向きをMuJoCo回転に変換 -->
+<body name="color_sensor_body" pos="0.0403 0.0002 0.0405" euler="-0.0 0.0 -90.0">
+  <joint name="sensor_slide" type="slide" axis="1 0 0"
+         range="-0.090 0.090" damping="10.0"/>
+  <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+  <include file="components/color_sensor_body.xml"/>
+</body>
+
+
+# ログ出力完了: /Users/kuboaki/Projects/libspikehat_sim/studio_model/blender/blender_export_color_blocks_with_sensor_log.txt

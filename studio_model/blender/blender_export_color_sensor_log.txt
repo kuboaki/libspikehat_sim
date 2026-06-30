@@ -15,14 +15,17 @@ color_sensor 処理
 ============================================================
   MESHオブジェクト数: 1
   統合bbox (変換前):
-    X[-54.9, 4.9]  Y[-80.8, -22.0]  Z[0.1, 57.9] LDU
-  オフセット: (25.00, 51.43, -0.10) LDU
+    X[-29.9, 29.9]  Y[-29.3, 29.5]  Z[-28.9, 28.9] LDU
+  center_mode=bottom_z  オフセット: (-0.00, -0.07, 28.90) LDU
   Saved: /Users/kuboaki/Projects/libspikehat_sim/examples/meshes/color_sensor.stl
   頂点数: 7346  三角面数: 6816
   MuJoCo上のサイズ(参考): W=0.0239m  D=0.0235m  H=0.0231m
-  検出面 MuJoCo body local Y: 0.0118 m  (Blender Y_min=-80.8 LDU)
-  site Y (内側5mm): 0.0068 m
-  → color_site pos="0 0.0068 Z_center"  (euler="-90 0 0"で世界-Z=下向き)
+  Y_min側頂点数: 1324  Y_max側頂点数: 1128
+  → 検出面としてY_min側を採用
+  検出面頂点数: 1324  重心(Blender): (0.02, -28.30, 28.92) LDU
+  site body local MuJoCo: X=-0.0000 Y_face=0.0113 Z=0.0116 m
+  site Y (内側5mm): 0.0063 m
+  → color_site pos="-0.0000 0.0063 0.0116"
 
 ============================================================
 MuJoCo XML スニペット（参考）
@@ -30,15 +33,15 @@ MuJoCo XML スニペット（参考）
 
 <!-- color_sensor_body.xml に記述するスニペット -->
 <!-- センサーの向き:
-     STLはStudio標準向き（検出面がbody local +Y方向）
-     euler="-90 0 0" で検出面を世界-Z（下向き）に回転
-     color_site pos Y = 検出面のbody local Y座標（自動計算値: 0.0068m）-->
-<body name="color_sensor_body" pos="0 -0.012 0.034" euler="-90 0 0">
+     STLはbottom_z方式（XY中心・Z底面=0）
+     euler="-90 0 0" で検出面(body local +Y)が世界-Z(下向き)を向く
+     color_site pos Y = 検出面から5mm内側（自動計算値: 0.0063m） -->
+<body name="color_sensor" euler="-90 0 0">
   <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
   <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
         contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
-  <!-- Z_centerはセンサーSTLのZ範囲中心(≈half_Z)で補正: world Y=0に揃える -->
-  <site name="color_site" pos="0 0.0068 Z_center" size="0.005" rgba="1 1 0 1"/>
+  <!-- site位置は検出面3D重心から算出（部品形状に忠実・再利用可能） -->
+  <site name="color_site" pos="-0.0000 0.0063 0.0116" size="0.005" rgba="1 1 0 1"/>
 </body>
 
 
