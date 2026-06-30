@@ -43,41 +43,57 @@ examples/
 自分のロボットの Studio モデルに `37316c01.dat`（距離センサー）を配置します。
 センサーの検出面が **前方（ロボットが検出したい方向）** を向くよう回転させてください。
 
-次の2つの Studio ファイルを作成します：
+ロボットモデルの `.io` ファイルにセンサーを配置します：
 
 ```
-distance_sensor.io          ← センサー単体モデル（STL生成用）
-my_robot_with_sensor.io     ← ロボット + センサーの組み合わせモデル（位置確認用）
+my_robot_with_sensor.io
 ├── my_robot_body
-├── ...
+│   └── reference_body      ← センサーのpos計算基準となるボディ（例: gear36相当）
 └── 37316c01.dat            ← 距離センサー（検出方向に向けて配置）
 ```
 
-### Step 2: Blenderでセンサーのpos/euler を確認する
+### Step 2: Blenderでセンサーの pos を求める
 
-**センサーSTLの生成:**
+1. Blenderを起動してデフォルトオブジェクトを削除
+2. `File → Import → LDraw` で組み合わせモデルの `.io` をインポート（Scale=1.0）
+3. スクリプトエディタで以下を実行して `matrix_world.translation` を取得：
+
+```python
+import bpy
+for o in bpy.data.objects:
+    t = o.matrix_world.translation
+    print(o.name, t.x, t.y, t.z)
+```
+
+4. センサーオブジェクト（`37316c01.dat`）と基準ボディの translation の差分を
+   MuJoCo座標系へ変換する。
+
+```
+SCALE = 0.0004
+mj_x = -(T_sensor.x - T_ref.x) * SCALE
+mj_y = -(T_sensor.y - T_ref.y) * SCALE
+mj_z =  (T_sensor.z - T_ref.z) * SCALE
+```
+
+この値が `sensor_mount` body の `pos` になります（補正不要）。
+
+> **なぜ単純差分で済むのか:**
+> `distance_sensor.io` はパーツをピボット原点（0,0,0）に無回転で配置してあります。
+> エクスポートスクリプトの `center_mode="pivot_origin"` により、STLの原点が
+> パーツ自身のピボット点と一致します。そのため、ロボットモデル上でのパーツの
+> ピボット位置（= `matrix_world.translation`）がそのまま MuJoCo の body 位置基準に
+> 対応するため、単純差分だけで pos が求まります。
+
+### Step 2b: STLを再生成する（形状変更時のみ）
+
+`distance_sensor.io` の形状を変えた場合、または初回セットアップ時は以下を実行します：
 
 1. Blenderを起動してデフォルトオブジェクトを削除
 2. `File → Import → LDraw` で `distance_sensor.io` をインポート（Scale=1.0）
 3. `studio_model/blender/blender_export_distance_sensor.py` を実行
-4. `examples/meshes/distance_sensor.stl` が生成され、ログに以下が出力される：
+4. `examples/meshes/distance_sensor.stl` と `distance_site` pos 値が更新される
 
-```
-センサー底面 MuJoCo Z: X.XXXX m  （= sensor_mount pos Z）
-site body local MuJoCo: X=0.XXXX Y_face=0.XXXX Z=0.XXXX m
-```
-
-**センサー位置と初期距離の計算:**
-
-1. Blenderを起動してデフォルトオブジェクトを削除
-2. `File → Import → LDraw` で組み合わせモデルの `.io` をインポート（Scale=1.0）
-3. `studio_model/blender/blender_export_distance_sensor_test.py` を実行
-4. ログに以下が出力される：
-
-```
-センサー底面 MuJoCo Z: X.XXXX m  （= sensor_mount pos Z）
-IOファイルでのセンサー→壁 距離: XXX.X mm
-```
+通常は STL 再生成は不要です（`distance_sensor.stl` は共通アセットとして配布されます）。
 
 ### Step 3: MuJoCo XMLに組み込む
 
@@ -167,12 +183,18 @@ STLを再生成した場合にのみ再計算が必要です。
 
 センサー形状を変更した場合は以下の手順で再生成します：
 
-1. Studio で `distance_sensor.io` を更新・保存
+1. Studio で `distance_sensor.io` を更新・保存（パーツは原点・無回転のまま維持）
 2. Blender で `distance_sensor.io` をインポート（Scale=1.0）
 3. `studio_model/blender/blender_export_distance_sensor.py` を実行
+   （`center_mode="pivot_origin"` を維持すること）
 4. `examples/meshes/distance_sensor.stl` が更新される
-5. ログに出力される `site body local MuJoCo` 値を
+5. ログに出力される `distance_site pos` 値を
    `distance_sensor_body.xml` の `distance_site pos` に反映
+
+> **distance_sensor.io/.ldr の原則:**
+> `37316c01.dat` は Studio のデフォルト姿勢（無回転）かつ原点(0,0,0)に配置すること。
+> これにより、どのロボットに組み込んでも「パーツのワールド座標 - 基準ボディのワールド座標」
+> の単純差分で pos が求まるという一貫性が保たれます。
 
 ---
 
