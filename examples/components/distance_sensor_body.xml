@@ -14,6 +14,8 @@
           センサーの向き（euler）は sensor_mount 側で指定すること。
 
   座標系・向き:
+    - distance_sensor.ldr はパーツの identity 回転（Studio標準姿勢そのまま）を使用。
+      STL原点 = パーツ自身のピボット（center_mode="pivot_origin"）。
     - euler="0 0 0" （デフォルト）で検出面が世界+Y（前方）を向く
     - distance_site はセンサーボディ内側（検出面から 5mm 内側）に配置
     - レイキャストは +Y 方向（前方）に発射される
@@ -22,6 +24,8 @@
     - Studio で自分のロボットモデルにセンサーを配置した組み合わせ .io を作成
     - Blender でインポートし blender_export_distance_sensor_test.py を実行
     - 出力された pos 値を sensor_mount body の pos に使う
+      （STL原点=パーツのピボットなので、配置先でのパーツのワールド座標から
+       基準ボディのワールド座標を引く単純差分でよい）
     - センサーの向きが前方以外の場合は euler を調整する
 
   センサーサイズ（参考）:
@@ -35,8 +39,8 @@
   <!-- 衝突判定用box（センサー外形に近似: W=55.9mm D=31.5mm H=23.1mm）
        壁がセンサーを通り抜けないようにする -->
   <geom name="distance_sensor_col" type="box"
-        pos="0 0 0.0116" size="0.0280 0.0158 0.0116"
+        pos="0 -0.0118 0" size="0.0280 0.0158 0.0116"
         contype="1" conaffinity="1" rgba="0.3 0.3 0.3 0"/>
   <!-- distance_site: 検出面3D重心から算出（部品形状に忠実・再利用可能） -->
-  <site name="distance_site" pos="0 0.0108 0.0116" size="0.005" rgba="1 0 0 1"/>
+  <site name="distance_site" pos="-0.0001 0.0225 0.0025" size="0.005" rgba="1 0 0 1"/>
 </body>

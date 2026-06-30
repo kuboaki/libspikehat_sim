@@ -100,9 +100,14 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
 
     if center_mode == "bottom_z":
         dx, dy, dz = -cx, -cy, -z0
+    elif center_mode == "pivot_origin":
+        # パーツ自身のピボット(.ldr側で世界原点に配置済み)をSTL原点とする。
+        # オフセット計算をbboxに依存させない＝再利用先での位置計算が
+        # 「ターゲットでのパーツ配置 - 基準点」の単純差分だけで済む。
+        dx, dy, dz = 0.0, 0.0, 0.0
     else:
         dx, dy, dz = -cx, -cy, -cz
-    print(f"  オフセット: ({dx:.2f}, {dy:.2f}, {dz:.2f}) LDU")
+    print(f"  center_mode={center_mode}  オフセット: ({dx:.2f}, {dy:.2f}, {dz:.2f}) LDU")
 
     all_verts = []
     triangles = []
@@ -145,14 +150,14 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
     print(f"  MuJoCo上のサイズ(参考): W={w:.4f}m  D={d:.4f}m  H={h:.4f}m")
 
     # 検出面位置の計算
-    # Blender -Y (y0, 最小値) = LDraw -Z（センサー前面＝検出面）→ MuJoCo +Y
-    # bottom_z centering後: MuJoCo Y of detection face = -(y0 + dy) * SCALE
     # ── 検出面の3D重心からsite位置を計算 ──────────────────
-    # 検出面 = Blender Y_min 付近の頂点群（LDraw -Z = センサー前面）
+    # 検出面(レンズ面)は複雑な形状(頂点数が多い)なので、Y_min側・Y_max側
+    # 両方の頂点数を比較し、頂点数が多い方を検出面と判定する。
     FACE_TOL    = 2.0
     SITE_RADIUS = 0.005
 
-    face_verts = []
+    face_verts_min = []
+    face_verts_max = []
     for obj in meshes:
         eval_obj2 = obj.evaluated_get(depsgraph)
         mesh2     = eval_obj2.to_mesh()
@@ -160,8 +165,14 @@ def export_stl(meshes, out_filename, center_mode="bottom_z"):
         for v in mesh2.vertices:
             wv = mat2 @ v.co
             if wv.y <= y0 + FACE_TOL:
-                face_verts.append((wv.x + dx, wv.y + dy, wv.z + dz))
+                face_verts_min.append((wv.x + dx, wv.y + dy, wv.z + dz))
+            if wv.y >= y1 - FACE_TOL:
+                face_verts_max.append((wv.x + dx, wv.y + dy, wv.z + dz))
         eval_obj2.to_mesh_clear()
+
+    print(f"  Y_min側頂点数: {len(face_verts_min)}  Y_max側頂点数: {len(face_verts_max)}")
+    face_verts = face_verts_max if len(face_verts_max) > len(face_verts_min) else face_verts_min
+    print(f"  → 検出面として{'Y_max側' if face_verts is face_verts_max else 'Y_min側'}を採用")
 
     if face_verts:
         fc_x = sum(v[0] for v in face_verts) / len(face_verts)
@@ -214,7 +225,7 @@ print("=" * 60)
 result = export_stl(
     meshes       = all_meshes,
     out_filename = "distance_sensor.stl",
-    center_mode  = "bottom_z",
+    center_mode  = "pivot_origin",
 )
 
 if result:
@@ -235,7 +246,7 @@ print(f"""
 <!-- センサーの向き:
      STLはStudio標準向き（検出面がbody local +Y方向）
      euler="0 0 0" で検出面が世界+Y（前方）を向く
-     distance_site pos Y = 検出面から5mm内側（自動計算値: {site_y_str}m） -->
+     distance_site pos Y = 検出面から5mm内側（自動計算値: {sy_str}m） -->
 <body name="distance_sensor" euler="0 0 0">
   <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
   <geom name="distance_sensor_geom" type="mesh" mesh="distance_sensor_mesh"
