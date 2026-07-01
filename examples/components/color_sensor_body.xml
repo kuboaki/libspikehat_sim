@@ -28,6 +28,7 @@
   <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
   <geom name="color_sensor_geom" type="mesh" mesh="color_sensor_mesh"
         contype="0" conaffinity="0" rgba="0.3 0.3 0.3 1"/>
-  <!-- site位置は検出面3D重心から算出（blender_export_color_sensor.py による自動計算値） -->
-  <site name="color_site" pos="0.0000 0.0063 0.0116" size="0.005" rgba="1 1 0 1"/>
+  <!-- site位置は検出面3D重心から算出（blender_export_color_sensor.py による自動計算値）
+       pivot_origin STL: センサー基準点=原点、検出面は+Y方向、Z=0（センサー中心高さ） -->
+  <site name="color_site" pos="0.0000 0.0063 0.0000" size="0.005" rgba="1 1 0 1"/>
 </body>

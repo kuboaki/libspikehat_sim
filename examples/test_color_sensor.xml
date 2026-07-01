@@ -13,10 +13,11 @@
     構成:
       - color_sensor_body: カラーセンサー本体（スライダーで左右に移動）
           初期位置: tile_yellow(X=0) の上
-          pos Y=-0.0116: bottom_z STL(高さ0.0231m)のZ中心をworld Y=0に合わせる補正
-          pos Z= 0.0405: color_blocks_with_color_sensor.io から取得したセンサー高さ
-          euler なし: スライダー axis="1 0 0" が world X に沿うよう outer body は無回転
-          include: color_sensor_body.xml が euler="-90 0 0"（検出面→下向き）を担う
+          pos Y=0    : pivot_origin STL はセンサー基準点=原点で対称。Y補正不要
+          pos Z=0.0405: color_blocks_with_color_sensor.io から取得したセンサー高さ
+          euler="-90 0 0": 検出面を world -Z（下向き）に回転。Rx(-90°)はX軸不変で
+                   slider axis="1 0 0" は world X に沿ったまま ✓
+          include: color_sensor_body.xml（body タグは除去され inertial/geom/site が挿入）
 
       - color_blocks: カラーブロック群（LEGOメッシュ）
           base_plate, gap_cover, tile_black/blue/green/yellow/red/white/brown
@@ -98,7 +99,7 @@
                   slider axis="1 0 0" は world X に沿ったまま ✓
          include    : color_sensor_body.xml（body タグは除去され inertial/geom/site が挿入）
     ──────────────────────────────────────────────── -->
-    <body name="color_sensor_body" pos="0 -0.0116 0.0405" euler="-90 0 0">
+    <body name="color_sensor_body" pos="0 0 0.0405" euler="-90 0 0">
       <joint name="sensor_slide" type="slide" axis="1 0 0"
              range="-0.090 0.090" damping="10.0"/>
       <include file="components/color_sensor_body.xml"/>

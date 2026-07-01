@@ -17,16 +17,19 @@ Blender用スクリプト: color_sensor.io → color_sensor.stl
   → euler="-90 0 0" で検出面が世界-Z（下向き）を向く
 
 注意:
-  37308.dat は Studio の床スナップにより Z=19.5 LDU が自動付与される。
-  center_mode="bottom_z" を使うことでこのオフセットを吸収し、
-  STL の Z 底面を常に 0 に揃える。
+  37308.dat は Studio の床スナップにより Z=19.5 LDU が自動付与されるため、
+  Studio で color_sensor.io を開いてはならない。
+  Blender には color_sensor.ldr（Z=0 に手動編集済み）を直接インポートする。
+  center_mode="pivot_origin" を使うことで STL 原点 = LDraw パーツ基準点となり、
+  distance_sensor と同じ embed 方式が使える。
 
 出力:
-  color_sensor.stl … センサー外形（XY中心・Z底面=0）
+  color_sensor.stl … センサー外形（パーツ基準点=原点）
 
 使い方:
   1. Blenderを起動してデフォルトオブジェクトを削除
-  2. File → Import → LDraw で color_sensor.io をインポート（Scale=1.0）
+  2. File → Import → LDraw で color_sensor.ldr を直接インポート（Scale=1.0）
+     ※ color_sensor.io ではなく .ldr を使うこと（Studioのスナップを避けるため）
   3. このスクリプトをBlenderのスクリプトエディタで開き「スクリプトを実行」
 """
 
@@ -224,7 +227,7 @@ print("=" * 60)
 result = export_stl(
     meshes       = all_meshes,
     out_filename = "color_sensor.stl",
-    center_mode  = "bottom_z",
+    center_mode  = "pivot_origin",
 )
 
 # ── MuJoCo XMLスニペット出力 ──────────────────────────────
@@ -242,7 +245,8 @@ else:
 print(f"""
 <!-- color_sensor_body.xml に記述するスニペット -->
 <!-- センサーの向き:
-     STLはbottom_z方式（XY中心・Z底面=0）
+     STLはpivot_origin方式（LDrawパーツ基準点=原点）
+     distance_sensorと同じembed方式で再利用可能
      euler="-90 0 0" で検出面(body local +Y)が世界-Z(下向き)を向く
      color_site pos Y = 検出面から5mm内側（自動計算値: {sy_str}m） -->
 <body name="color_sensor" euler="-90 0 0">
